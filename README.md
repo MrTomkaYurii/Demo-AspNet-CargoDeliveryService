@@ -1,4 +1,4 @@
-# 🚛 Cargo Delivery Service: Enterprise Multi-Paradigm Platform (.NET 10)
+# 🚛 Demo-AspNet-CargoDeliveryService: Enterprise Multi-Paradigm Platform (.NET 10)
 
 > Комплексна демонстраційна платформа вантажних перевезень, структурована за трьома чіткими архітектурними підсистемами в єдиному репозиторії:
 > 1. **Класичний N-Tier моноліт з WPF-клієнтом** (EF Core 10, Dapper, Specification Pattern)
