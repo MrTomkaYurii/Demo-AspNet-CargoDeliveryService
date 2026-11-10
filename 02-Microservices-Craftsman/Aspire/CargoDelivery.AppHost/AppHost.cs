@@ -34,10 +34,10 @@ var rabbitmq = builder.AddRabbitMQ("rabbitmq")
 // логічну БД, унеможливлюючи несанкціонований доступ до чужих таблиць напряму через SQL.
 //
 // ⚠️ ВАЖЛИВО: імена ресурсів в Aspire РЕГІСТРОНЕЗАЛЕЖНІ та мають бути унікальними.
-// Якщо назвати базу "CargoOrderingService", а проєкт — "cargoorderingservice", AppHost
+// Якщо назвати базу "CargoOrderingManager", а проєкт — "cargoorderingmanager", AppHost
 // впаде на старті з DistributedApplicationException ("resource ... already exists").
 // Тому ресурси БД мають суфікс "-db", а очікуване сервісом ім'я рядка підключення
-// (ConnectionStrings:CargoOrderingService тощо) задається явно через connectionName
+// (ConnectionStrings:CargoOrderingManager тощо) задається явно через connectionName
 // у .WithReference(...) нижче.
 //
 // Другий аргумент AddDatabase — фізична назва БД всередині SQL Server. Якщо БД ще
@@ -47,19 +47,19 @@ var rabbitmq = builder.AddRabbitMQ("rabbitmq")
 var sqlserver = builder.AddSqlServer("sqlserver");
 var driversDb = sqlserver.AddDatabase("driversmanagement-db", "dev_driversmanagement");
 var blogDb = sqlserver.AddDatabase("driversblogmanagement-db", "dev_driversblogmanagement");
-var cargoDb = sqlserver.AddDatabase("cargoorderingservice-db", "dev_cargoorderingservice");
+var cargoDb = sqlserver.AddDatabase("cargoorderingmanager-db", "dev_cargoorderingmanager");
 
 // ====================================================================================
-// 📦 3. МІКРОСЕРВІС ЗАМОВЛЕНЬ ТА ДОСТАВОК: CargoOrderingService
+// 📦 3. МІКРОСЕРВІС ЗАМОВЛЕНЬ ТА ДОСТАВОК: CargoOrderingManager
 // ------------------------------------------------------------------------------------
 // - Володіє логістичним доменом (Order, Delivery, Carrier).
 // - MassTransit Consumer для IDriverCreated / IDriverUpdated (актуалізація водіїв).
 // - MassTransit Publisher для IOrderCreated.
 // - Внутрішній REST-ендпоінт api/internal/deliveries для агрегаторів.
 // ====================================================================================
-var cargoApi = builder.AddProject<Projects.CargoOrderingService>("cargoorderingservice")
-    // connectionName → змінна ConnectionStrings__CargoOrderingService, яку читає ConnectionStringOptions сервісу
-    .WithReference(cargoDb, connectionName: "CargoOrderingService")
+var cargoApi = builder.AddProject<Projects.CargoOrderingManager>("cargoorderingmanager")
+    // connectionName → змінна ConnectionStrings__CargoOrderingManager, яку читає ConnectionStringOptions сервісу
+    .WithReference(cargoDb, connectionName: "CargoOrderingManager")
     .WithReference(rabbitmq)
     // Health probe для Aspire: ресурс вважається "Healthy" лише коли GET /health повертає 200.
     // Саме на цей стан чекають залежні ресурси у .WaitFor(cargoApi).
@@ -88,7 +88,7 @@ var blogApi = builder.AddProject<Projects.DriversBlogManagement>("driversblogman
 // - Володіє повним досьє водія (Driver Aggregate Root).
 // - MassTransit Publisher: ініціює події створення та оновлення водія.
 // - gRPC Client: викликає DriversBlogManagement напряму по HTTP/2 Protobuf.
-// - HTTP Gateway Aggregator / BFF: паралельно опитує CargoOrderingService та
+// - HTTP Gateway Aggregator / BFF: паралельно опитує CargoOrderingManager та
 //   DriversBlogManagement через Task.WhenAll для формування зведеного дашборду.
 // - .WaitFor(...) гарантує, що сервіс стартує лише після повної готовності БД, брокера
 //   та суміжних API, усуваючи неприємні стартові винятки Connection Refused!

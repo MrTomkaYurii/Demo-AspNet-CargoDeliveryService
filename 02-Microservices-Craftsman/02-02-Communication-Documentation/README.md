@@ -27,7 +27,7 @@
   * Використання `IHttpClientFactory` та типізованих клієнтів (Typed Clients) у .NET 10.
   * Паралельний Fan-Out / Fan-In (`Task.WhenAll`) для одночасного опитування підпорядкованих мікросервісів.
   * Стійкість та ізоляція збоїв: патерн Graceful Degradation (повернення часткових даних при недоступності окремого сервісу).
-  * Нативне розпізнавання імен через .NET Aspire Service Discovery (`https+http://cargoorderingservice`, тощо).
+  * Нативне розпізнавання імен через .NET Aspire Service Discovery (`https+http://cargoorderingmanager`, тощо).
   * Внутрішні (service-to-service) ендпоінти `api/internal/*` та окремий короткий бюджет Polly для некритичних залежностей.
   * Порівняння вбудованого BFF (`DriversManagement`) і виділеного агрегатора (`CargoDelivery.HttpAggregator`).
 
@@ -48,7 +48,7 @@
   * Патерн Publish/Subscribe та типові топології RabbitMQ (Fanout Exchanges & Quorum Queues; чому «lazy»-аргумент був міфом).
   * Повтори споживачів (`UseMessageRetry`), черги `_error`, Dual-Write і Transactional Outbox.
   * Контракти доменних подій із `SharedKernel` (`IDriverCreated`, `IDriverUpdated`, `IOrderCreated`).
-  * Споживачі (Consumers) у `DriversBlogManagement` та `CargoOrderingService`.
+  * Споживачі (Consumers) у `DriversBlogManagement` та `CargoOrderingManager`.
   * Наскрізний Distributed Tracing повідомлень через OpenTelemetry (OTLP).
 
 ---
@@ -56,7 +56,7 @@
 ## 📑 Огляди мікросервісів
 
 * 🚚 **[DriversManagement-README.md](DriversManagement-README.md)** — Головний сервіс обліку водіїв, автопарку, ремонтів, техоглядів, gRPC-клієнт та видавець подій.
-* 📦 **[CargoOrderingService-README.md](CargoOrderingService-README.md)** — Специфікація мікросервісу замовлень, доставок, рейсів та обробки подій водіїв.
+* 📦 **[CargoOrderingManager-README.md](CargoOrderingManager-README.md)** — Специфікація мікросервісу замовлень, доставок, рейсів та обробки подій водіїв.
 * 📝 **[DriversBlogManagement-README.md](DriversBlogManagement-README.md)** — Специфікація мікросервісу блогу водіїв, постів, коментарів та вбудованого gRPC-сервера.
 
 ---

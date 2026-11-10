@@ -19,9 +19,9 @@ using Microsoft.Extensions.Logging;
 ///    HttpMessageHandler, уникаючи витоків ресурсів.
 ///
 /// 2. ЗВІДКИ БЕРЕТЬСЯ АДРЕСА СЕРВІСУ (SERVICE DISCOVERY)?
-///    У Program.cs встановлюється: client.BaseAddress = new Uri("http://cargoorderingservice");
+///    У Program.cs встановлюється: client.BaseAddress = new Uri("http://cargoorderingmanager");
 ///    У середовищі .NET Aspire компонент Service Discovery автоматично перехоплює це
-///    логічне ім'я "cargoorderingservice" і підставляє реальний IP-порт запущеного контейнера
+///    логічне ім'я "cargoorderingmanager" і підставляє реальний IP-порт запущеного контейнера
 ///    чи локального процесу (наприклад, http://localhost:5241).
 ///
 /// 3. СТІЙКІСТЬ ЧЕРЕЗ POLLY (.AddStandardResilienceHandler):
@@ -46,7 +46,7 @@ public sealed class CargoOrderingApiClient : ICargoOrderingApiClient
     }
 
     /// <summary>
-    /// Виконує GET-запит до ендпоінту доставок у CargoOrderingService.
+    /// Виконує GET-запит до ендпоінту доставок у CargoOrderingManager.
     /// </summary>
     public async Task<List<AggregatedDeliveryDto>> GetActiveDeliveriesByDriverAsync(
         Guid driverId, 
@@ -55,7 +55,7 @@ public sealed class CargoOrderingApiClient : ICargoOrderingApiClient
         try
         {
             // Відносний шлях до ВНУТРІШНЬОГО (service-to-service) ендпоінта з фільтром за водієм.
-            // Базова адреса вже містить https+http://cargoorderingservice (див. WebAppServiceConfiguration).
+            // Базова адреса вже містить https+http://cargoorderingmanager (див. WebAppServiceConfiguration).
             var requestUri = $"api/internal/deliveries?driverId={driverId}";
 
             _logger.LogInformation("Надсилання HTTP GET запиту до {BaseAddress}{Uri} для водія {DriverId}",
@@ -94,14 +94,14 @@ public sealed class CargoOrderingApiClient : ICargoOrderingApiClient
             // Ми не викидаємо виняток вище, оскільки контролер Агрегатора застосовує
             // патерн Graceful Degradation і не повинен падати при збої одного сервісу.
             _logger.LogWarning(ex, 
-                "Не вдалося отримати доставки з CargoOrderingService для водія {DriverId}. Статус відповіді: {StatusCode}", 
+                "Не вдалося отримати доставки з CargoOrderingManager для водія {DriverId}. Статус відповіді: {StatusCode}", 
                 driverId, ex.StatusCode);
             
             throw; // Прокидаємо для централізованої обробки в SafeFetchAsync
         }
         catch (OperationCanceledException)
         {
-            _logger.LogWarning("Запит до CargoOrderingService було скасовано за таймаутом або запитом користувача.");
+            _logger.LogWarning("Запит до CargoOrderingManager було скасовано за таймаутом або запитом користувача.");
             throw;
         }
     }

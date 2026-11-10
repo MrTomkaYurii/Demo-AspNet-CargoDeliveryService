@@ -28,7 +28,7 @@ using SharedKernel.Messages;
 ///      Вимагає, щоб видавець знав точну чергу отримувача (жорсткий зв'язок).
 ///    - Publish (Publish/Subscribe): публікує подію в Fanout Exchange (SharedKernel.Messages:IDriverCreated).
 ///      RabbitMQ автоматично робить копію повідомлення для ВСІХ черг сервісів,
-///      які підписалися на цей контракт (DriversBlogManagement, CargoOrderingService, тощо).
+///      які підписалися на цей контракт (DriversBlogManagement, CargoOrderingManager, тощо).
 ///      Видавець взагалі не знає, хто саме і скільки споживачів слухають цю подію!
 ///
 /// 3. ПОСЛІДОВНІСТЬ: СПОЧАТКУ БАЗА ДАНИХ, ПОТІМ ШИНА (ACID + EVENTUAL CONSISTENCY):

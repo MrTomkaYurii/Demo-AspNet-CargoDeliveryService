@@ -59,7 +59,7 @@ public sealed class InternalPostAboutDriversController : ControllerBase
             PostId = p.Id,
             p.Title,
             Summary = p.Content is { Length: > SummaryLength } ? p.Content[..SummaryLength] + "…" : p.Content ?? string.Empty,
-            // У BaseEntity блогу CreatedOn має тип DateTime (на відміну від DateTimeOffset у CargoOrderingService)
+            // У BaseEntity блогу CreatedOn має тип DateTime (на відміну від DateTimeOffset у CargoOrderingManager)
             CreatedAtUtc = p.CreatedOn
         });
 

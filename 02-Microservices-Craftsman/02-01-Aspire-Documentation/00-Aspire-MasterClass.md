@@ -74,7 +74,7 @@ flowchart TB
             SQL[("💾 MS SQL Server 2022")]
             DB1[("dev_driversmanagement")]
             DB2[("dev_driversblogmanagement")]
-            DB3[("dev_cargoorderingservice")]
+            DB3[("dev_cargoorderingmanager")]
             SQL --> DB1
             SQL --> DB2
             SQL --> DB3
@@ -83,7 +83,7 @@ flowchart TB
         subgraph Services ["⚡ Microservice Web APIs (.NET 10)"]
             DM["🚚 DriversManagement<br/>(Core API & Gateway Aggregator)"]
             DB["📝 DriversBlogManagement<br/>(Blog & Feed API)"]
-            CO["📦 CargoOrderingService<br/>(Orders API)"]
+            CO["📦 CargoOrderingManager<br/>(Orders API)"]
             AGG["🛡️ CargoDelivery.HttpAggregator<br/>(Gateway Aggregator)"]
         end
     end
@@ -131,10 +131,10 @@ flowchart TB
    [👉 **Перейти до файлу (клікніть тут)**](../DriversBlogManagement/src/DriversBlogManagement/DriversBlogManagement.csproj)
 
 4. **Сервіс замовлень вантажів (Cargo Logistics):**
-   > 📍 **Шлях до файлу:** `02-Microservices-Craftsman/CargoOrderingService/src/CargoOrderingService/CargoOrderingService.csproj`  
+   > 📍 **Шлях до файлу:** `02-Microservices-Craftsman/CargoOrderingManager/src/CargoOrderingManager/CargoOrderingManager.csproj`  
    *Управління замовленнями, рейсами, статусами доставки та фонова синхронізація водіїв.*
 
-   [👉 **Перейти до файлу (клікніть тут)**](../CargoOrderingService/src/CargoOrderingService/CargoOrderingService.csproj)
+   [👉 **Перейти до файлу (клікніть тут)**](../CargoOrderingManager/src/CargoOrderingManager/CargoOrderingManager.csproj)
 
 5. **Виділений Gateway Aggregator (Scatter-Gather + лабораторія Polly):**
    > 📍 **Шлях до файлу:** `02-Microservices-Craftsman/CargoDelivery.HttpAggregator/Program.cs`
@@ -183,11 +183,11 @@ var rabbitmq = builder.AddRabbitMQ("rabbitmq")
 var sqlserver = builder.AddSqlServer("sqlserver");
 var driversDb = sqlserver.AddDatabase("driversmanagement-db", "dev_driversmanagement");
 var blogDb = sqlserver.AddDatabase("driversblogmanagement-db", "dev_driversblogmanagement");
-var cargoDb = sqlserver.AddDatabase("cargoorderingservice-db", "dev_cargoorderingservice");
+var cargoDb = sqlserver.AddDatabase("cargoorderingmanager-db", "dev_cargoorderingmanager");
 
 // 3. Мікросервіс замовлень вантажів (MassTransit паблішер і консьюмер)
-var cargoApi = builder.AddProject<Projects.CargoOrderingService>("cargoorderingservice")
-    .WithReference(cargoDb, connectionName: "CargoOrderingService") // → ConnectionStrings__CargoOrderingService
+var cargoApi = builder.AddProject<Projects.CargoOrderingManager>("cargoorderingmanager")
+    .WithReference(cargoDb, connectionName: "CargoOrderingManager") // → ConnectionStrings__CargoOrderingManager
     .WithReference(rabbitmq)
     .WithHttpHealthCheck("/health")                                 // готовність = GET /health → 200
     .WaitFor(cargoDb)
@@ -232,7 +232,7 @@ builder.Build().Run();
    `ConnectionStrings__DriversManagement=Server=127.0.0.1,{порт};...;Database=dev_driversmanagement`
 3. `.WithReference(blogApi)` та `.WithReference(cargoApi)` автоматично додають адреси кінцевих точок у середовище `driversmanagement`:
    `services__driversblogmanagement__https__0=https://localhost:5002`
-   `services__cargoorderingservice__https__0=https://localhost:5003`
+   `services__cargoorderingmanager__https__0=https://localhost:5003`
 4. Карта рядків реального файлу з поясненнями — у [гайді 01, §4.2](01_Aspire_Orchestration_AppHost_DeepDive.md#section-4).
 
 [⬆ До змісту](#toc) • [Наступний слайд ➡](#slide-4)
@@ -271,7 +271,7 @@ sequenceDiagram
 [👉 **Перейти до файлу (клікніть тут)**](../Aspire/CargoDelivery.AppHost/AppHost.cs)
 
 #### 3. Чому це зручно?
-1. **Ізоляція баз даних:** Кожен мікросервіс отримує власну базу даних (`dev_driversmanagement`, `dev_driversblogmanagement`, `dev_cargoorderingservice`), що повністю відповідає принципу **Database-per-Service** у Domain-Driven Design (DDD).
+1. **Ізоляція баз даних:** Кожен мікросервіс отримує власну базу даних (`dev_driversmanagement`, `dev_driversblogmanagement`, `dev_cargoorderingmanager`), що повністю відповідає принципу **Database-per-Service** у Domain-Driven Design (DDD).
 2. **Нуль налаштувань у appsettings.json:** Розробнику, який щойно склонував репозиторій, не потрібно налаштовувати паролі від SQL Server чи адреси хостів — Aspire згенерує і з'єднає все на льоту!
 3. **Ефемерність:** контейнери створюються заново при кожному запуску (без томів даних), тому схему БД сервіси створюють самі при старті (`MigrateAsync` або `EnsureCreatedAsync` — [MigrationHostedService.cs#L48](../DriversManagement/src/DriversManagement/Databases/MigrationHostedService.cs#L48)). Детальніше про «старі бази» і `WithDataVolume()` — [гайд 01, §9](01_Aspire_Orchestration_AppHost_DeepDive.md#section-9).
 
@@ -311,7 +311,7 @@ var driversApi = builder.AddProject<Projects.DriversManagement>("driversmanageme
 
 #### 3. Що бачить користувач у Aspire Dashboard?
 У вебінтерфейсі стан сервісу `driversmanagement` послідовно змінюється:
-1. `Waiting` — сервіс чекає на залежності з `.WaitFor(...)` (`driversmanagement-db`, `rabbitmq`, `driversblogmanagement`, `cargoorderingservice`).
+1. `Waiting` — сервіс чекає на залежності з `.WaitFor(...)` (`driversmanagement-db`, `rabbitmq`, `driversblogmanagement`, `cargoorderingmanager`).
 2. `Starting` — як тільки залежності успішно пройшли перевірку готовності.
 3. `Running` + Health `Healthy` (зелений індикатор) — мікросервіс відповів 200 на `/health` і готовий приймати зовнішні HTTP-запити.
 
@@ -345,7 +345,7 @@ flowchart LR
 
     DM["🚚 DriversManagement"] -->|AddServiceDefaults| SD
     DB["📝 DriversBlogManagement"] -->|AddServiceDefaults| SD
-    CO["📦 CargoOrderingService"] -->|AddServiceDefaults| SD
+    CO["📦 CargoOrderingManager"] -->|AddServiceDefaults| SD
     AGG["🛡️ HttpAggregator"] -->|AddServiceDefaults| SD
 ```
 
@@ -475,7 +475,7 @@ gantt
     sync-updated-driver receive/process :active, p5, 55, 95
     SQL INSERT INTO drivers (тіньова копія) :p6, 65, 90
 
-    section CargoOrderingService (Consumer)
+    section CargoOrderingManager (Consumer)
     ordering-sync-driver receive/process :active, p7, 55, 100
     SQL INSERT INTO drivers (тіньова копія) :p8, 70, 95
 ```
@@ -540,7 +540,7 @@ builder.Services.AddGrpcClient<DriverRpc.DriverRpcClient>(options =>
 Коли мікросервіси запускаються в різних середовищах (локально в Aspire, в юніт-тестах, у Docker чи на CI/CD), вони отримують конфігурацію брокера повідомлень у різний спосіб:
 - В **Aspire** рядок підключення передається у стандартному форматі: `ConnectionStrings:rabbitmq = amqp://guest:{згенерований_пароль}@localhost:{динамічний_порт}`.
 - У **класичному запуску Craftsman** параметри розбиті по секціях: `RabbitMq:Host`, `RabbitMq:Port`, `RabbitMq:Username` тощо.
-- В **тестах** зовнішнього брокера немає взагалі: у DriversManagement і блозі шина в тестових середовищах не реєструється, а CargoOrderingService має fallback на `In-Memory Bus`.
+- В **тестах** зовнішнього брокера немає взагалі: у DriversManagement і блозі шина в тестових середовищах не реєструється, а CargoOrderingManager має fallback на `In-Memory Bus`.
 
 #### 2. Універсальний адаптер у MassTransitServiceExtension
 > 📍 **Шлях до файлу:** `02-Microservices-Craftsman/DriversManagement/src/DriversManagement/Extensions/Services/MassTransitServiceExtension.cs`
@@ -739,7 +739,7 @@ flowchart TD
 
 #### 1. Передумови та технічні виклики
 Початковий стан Блоку 2 мав суттєвий архітектурний розрив:
-- `CargoOrderingService` вже був на .NET 10.
+- `CargoOrderingManager` вже був на .NET 10.
 - `DriversManagement` та `DriversBlogManagement` залишалися на .NET 7 (який вже є End-of-Life).
 - Проєкти використовували несумісні версії залежностей і застарілий Jaeger-клієнт.
 
@@ -762,7 +762,7 @@ flowchart TD
 #### 2.1. Стабілізація запуску через Aspire (що було виправлено)
 | Проблема | Рішення |
 | :--- | :--- |
-| AppHost падав: ресурс `CargoOrderingService` (БД) конфліктував з проєктом `cargoorderingservice` | Ресурси БД перейменовано на `*-db` + `connectionName` |
+| AppHost падав: ресурс `CargoOrderingManager` (БД) конфліктував з проєктом `cargoorderingmanager` | Ресурси БД перейменовано на `*-db` + `connectionName` |
 | `Newer version of the Aspire.Hosting.AppHost package is required` | SDK вирівняно до 13.6.1 |
 | Порожні бази (`Invalid object name ...`) | `MigrateAsync` / `EnsureCreatedAsync` при старті |
 | Неможливо створити водія (FK `companies`) / тіньовий водій отримував чужий Id | Виправлено зв'язки «один-до-одного» зі спільним PK + нові міграції |
@@ -773,7 +773,7 @@ flowchart TD
 
 #### 3. Верифікація результатів тестування
 Після міграції виконано запуск усіх тестових наборів:
-- `CargoOrderingService.UnitTests`: **37 Passed** (0 Failed)
+- `CargoOrderingManager.UnitTests`: **37 Passed** (0 Failed)
 - `DriversBlogManagement.UnitTests`: **49 Passed** (0 Failed)
 - `DriversManagement.UnitTests`: **57 Passed** (0 Failed)
 - `CargoDelivery.HttpAggregator.Tests`: **6 Passed** (3 юніт + 3 функціональні, 0 Failed)
@@ -817,7 +817,7 @@ dotnet run --project "02-Microservices-Craftsman\Aspire\CargoDelivery.AppHost\Ca
 4. Запустить усі 4 Web API (порти фіксовані в `launchSettings.json` кожного сервісу):
    - `driversmanagement` — `https://localhost:5001/swagger`
    - `driversblogmanagement` — `https://localhost:5002/swagger`
-   - `cargoorderingservice` — `https://localhost:5003/swagger`
+   - `cargoorderingmanager` — `https://localhost:5003/swagger`
    - `httpaggregator` — `https://localhost:57390/swagger`
 5. Автоматично наповнить бази демо-даними (Bogus): 50 водіїв → події RabbitMQ → тіньові копії → 50 постів і 50 замовлень із доставками. Візьміть `id` будь-якого водія з `GET https://localhost:5001/api/drivers/all`.
 
@@ -832,7 +832,7 @@ dotnet run --project "02-Microservices-Craftsman\Aspire\CargoDelivery.AppHost\Ca
 3. **Демо-дані:** `POST https://localhost:5003/api/internal/deliveries/demo-seed?driverId={id}` і `POST https://localhost:5002/api/internal/postaboutdrivers/demo-seed?driverId={id}`.
 4. **Паралельний HTTP Aggregator / BFF (Task.WhenAll):**
    Виконайте `GET /api/v1/driver-dashboard/{id}` (BFF у DriversManagement) або `GET https://localhost:57390/api/v1/shipment-summary/{id}` (виділений агрегатор).
-   *Агрегатор паралельно опитає `CargoOrderingService` та `DriversBlogManagement`, зливаючи інформацію у єдиний об'єднаний DTO.*
+   *Агрегатор паралельно опитає `CargoOrderingManager` та `DriversBlogManagement`, зливаючи інформацію у єдиний об'єднаний DTO.*
 5. **Синхронний бінарний RPC (gRPC HTTP/2):**
    Виконайте `GET /api/drivers/{id}`.
    *Сервіс виконає прямий бінарний виклик `GetDriverWithPosts` до віддаленого сервера блогу з автоматичним Graceful Degradation fallback при аварії — у відповіді поле `posts`.*

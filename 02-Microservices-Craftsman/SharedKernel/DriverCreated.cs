@@ -9,7 +9,7 @@ namespace SharedKernel.Messages
     /// ПРИЗНАЧЕННЯ:
     /// Контракт події "Створено водія" (DriverCreated). Публікується мікросервісом DriversManagement
     /// у шину MassTransit/RabbitMQ та споживається мікросервісами DriversBlogManagement
-    /// і CargoOrderingService для створення локальних тіньових реплік (Shadow Drivers).
+    /// і CargoOrderingManager для створення локальних тіньових реплік (Shadow Drivers).
     ///
     /// ЧОМУ ВИКОРИСТОВУЄТЬСЯ ІНТЕРФЕЙС (IDriverCreated)?
     /// 1. Рекомендація творців MassTransit:

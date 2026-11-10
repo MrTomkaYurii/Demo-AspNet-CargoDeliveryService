@@ -21,7 +21,7 @@
 * **Синхронна комунікація (gRPC Client):**
   * Використовує клієнт `DriverRpcClient` для виклику `DriversBlogManagement` за протоколом HTTP/2 Protobuf для отримання постів водія. Клієнт генерується з `Driver.proto` (`GrpcServices="Client"`) — **без** посилання на проєкт блогу.
 * **Синхронна комунікація (HTTP BFF):**
-  * `GET /api/v1/driver-dashboard/{id}` паралельно опитує `CargoOrderingService` і `DriversBlogManagement` через їхні внутрішні ендпоінти `api/internal/*` (`Task.WhenAll` + Graceful Degradation).
+  * `GET /api/v1/driver-dashboard/{id}` паралельно опитує `CargoOrderingManager` і `DriversBlogManagement` через їхні внутрішні ендпоінти `api/internal/*` (`Task.WhenAll` + Graceful Degradation).
   * `GET /api/internal/drivers/{id}` — компактна картка водія для `CargoDelivery.HttpAggregator`.
 * **Асинхронна комунікація (MassTransit + RabbitMQ):**
   * Публікує події `IDriverCreated` та `IDriverUpdated` із `SharedKernel` у шину RabbitMQ (Fanout Exchanges).
@@ -77,7 +77,7 @@ flowchart TD
     subgraph Outgoing_Events["MassTransit (Асинхронний Pub/Sub)"]
         DM -- "Publish(IDriverCreated, IDriverUpdated)" --> RMQ["🐰 RabbitMQ (Fanout)"]
         RMQ --> BlogCons["📝 DriversBlogManagement (SyncDriver)"]
-        RMQ --> OrdCons["📦 CargoOrderingService (SyncDriverInOrdering)"]
+        RMQ --> OrdCons["📦 CargoOrderingManager (SyncDriverInOrdering)"]
     end
 ```
 

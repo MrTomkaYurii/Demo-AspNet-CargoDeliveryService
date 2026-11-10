@@ -362,7 +362,7 @@
              ЧОМУ ПОДІЇ, А НЕ СІДИНГ У КОЖНОМУ СЕРВІСІ ОКРЕМО?
              DriversManagement — єдине джерело правди про водіїв. Для кожного створеного водія
              публікується IDriverCreated → RabbitMQ (Fanout) → тіньові копії з'являються в
-             DriversBlogManagement та CargoOrderingService ТИМИ САМИМИ Id. Тобто сідинг сам є
+             DriversBlogManagement та CargoOrderingManager ТИМИ САМИМИ Id. Тобто сідинг сам є
              живою демонстрацією Event-Driven реплікації (видно в Aspire Dashboard → Traces).
             
              БЕЗПЕКА ПОВТОРНОГО ЗАПУСКУ:
@@ -460,7 +460,7 @@
             Зведена DTO-модель для аналітичної панелі водія (Патерн Gateway Aggregator / BFF).
             Об'єднує дані з трьох незалежних мікросервісів:
             1. DriversManagement (локальна база: профіль водія, компанія, закріплене авто)
-            2. CargoOrderingService (зовнішній HTTP REST: активні рейси та доставки)
+            2. CargoOrderingManager (зовнішній HTTP REST: активні рейси та доставки)
             3. DriversBlogManagement (зовнішній HTTP REST / gRPC: останні публікації та активність)
             </summary>
         </member>
@@ -491,7 +491,7 @@
         </member>
         <member name="P:DriversManagement.Domain.Drivers.Dtos.AggregatedDriverDashboardDto.ActiveDeliveries">
             <summary>
-            Список активних доставок із CargoOrderingService (отримано через HTTP Client).
+            Список активних доставок із CargoOrderingManager (отримано через HTTP Client).
             </summary>
         </member>
         <member name="P:DriversManagement.Domain.Drivers.Dtos.AggregatedDriverDashboardDto.RecentBlogPosts">
@@ -545,7 +545,7 @@
                   Вимагає, щоб видавець знав точну чергу отримувача (жорсткий зв'язок).
                 - Publish (Publish/Subscribe): публікує подію в Fanout Exchange (SharedKernel.Messages:IDriverCreated).
                   RabbitMQ автоматично робить копію повідомлення для ВСІХ черг сервісів,
-                  які підписалися на цей контракт (DriversBlogManagement, CargoOrderingService, тощо).
+                  які підписалися на цей контракт (DriversBlogManagement, CargoOrderingManager, тощо).
                   Видавець взагалі не знає, хто саме і скільки споживачів слухають цю подію!
             
              3. ПОСЛІДОВНІСТЬ: СПОЧАТКУ БАЗА ДАНИХ, ПОТІМ ШИНА (ACID + EVENTUAL CONSISTENCY):
@@ -633,7 +633,7 @@
                 Замість того, щоб клієнтський додаток (веб-портал, мобільний застосунок або WPF)
                 виконував 3 окремих мережевих виклики через інтернет:
                   - GET /api/v1/drivers/{id} (до DriversManagement)
-                  - GET /api/v1/deliveries (до CargoOrderingService)
+                  - GET /api/v1/deliveries (до CargoOrderingManager)
                   - GET /api/v1/postaboutdrivers (до DriversBlogManagement)
                 Клієнт робить ОДИН легкий запит:
                   -> GET /api/v1/driver-dashboard/{id}
@@ -690,7 +690,7 @@
                MassTransit спрямовує повідомлення у RabbitMQ Fanout Exchange 'driver-updated',
                який миттєво дублює його у черги:
                  - sync-updated-driver (DriversBlogManagement)
-                 - ordering-sync-driver (CargoOrderingService)
+                 - ordering-sync-driver (CargoOrderingManager)
             4. EVENTUAL CONSISTENCY (Кінцева узгодженість):
                Всі сервіси отримують новий стан водія асинхронно, без блокування клієнтського запиту.
             ====================================================================================
@@ -711,9 +711,9 @@
                 HttpMessageHandler, уникаючи витоків ресурсів.
             
              2. ЗВІДКИ БЕРЕТЬСЯ АДРЕСА СЕРВІСУ (SERVICE DISCOVERY)?
-                У Program.cs встановлюється: client.BaseAddress = new Uri("http://cargoorderingservice");
+                У Program.cs встановлюється: client.BaseAddress = new Uri("http://cargoorderingmanager");
                 У середовищі .NET Aspire компонент Service Discovery автоматично перехоплює це
-                логічне ім'я "cargoorderingservice" і підставляє реальний IP-порт запущеного контейнера
+                логічне ім'я "cargoorderingmanager" і підставляє реальний IP-порт запущеного контейнера
                 чи локального процесу (наприклад, http://localhost:5241).
             
              3. СТІЙКІСТЬ ЧЕРЕЗ POLLY (.AddStandardResilienceHandler):
@@ -731,7 +731,7 @@
         </member>
         <member name="M:DriversManagement.Domain.Drivers.Services.Http.CargoOrderingApiClient.GetActiveDeliveriesByDriverAsync(System.Guid,System.Threading.CancellationToken)">
             <summary>
-            Виконує GET-запит до ендпоінту доставок у CargoOrderingService.
+            Виконує GET-запит до ендпоінту доставок у CargoOrderingManager.
             </summary>
         </member>
         <member name="T:DriversManagement.Domain.Drivers.Services.Http.DriversBlogApiClient">
@@ -770,7 +770,7 @@
              ------------------------------------------------------------------------------------
              ПРИЗНАЧЕННЯ:
              Інтерфейс клієнта для виконання синхронних HTTP REST-запитів до мікросервісу
-             замовлень вантажів (CargoOrderingService).
+             замовлень вантажів (CargoOrderingManager).
             
              ЧОМУ ВИКОРИСТОВУЄТЬСЯ ІНТЕРФЕЙС ТА ТИПІЗОВАНИЙ КЛІЄНТ?
              1. Принцип інверсії залежностей (DIP з SOLID):
@@ -864,7 +864,7 @@
                 Явно задає коротке ім'я обмінника замість повного імені типу.
              2. ExchangeType = ExchangeType.Fanout:
                 Обмінник транслює повідомлення про зміну водія всім підписаним сервісам
-                (DriversBlogManagement, CargoOrderingService тощо) паралельно.
+                (DriversBlogManagement, CargoOrderingManager тощо) паралельно.
              ====================================================================================
              </summary>
         </member>

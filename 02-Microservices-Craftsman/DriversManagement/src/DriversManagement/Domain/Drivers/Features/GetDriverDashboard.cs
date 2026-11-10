@@ -20,7 +20,7 @@ using Microsoft.Extensions.Logging;
 ///    Замість того, щоб клієнтський додаток (веб-портал, мобільний застосунок або WPF)
 ///    виконував 3 окремих мережевих виклики через інтернет:
 ///      - GET /api/v1/drivers/{id} (до DriversManagement)
-///      - GET /api/v1/deliveries (до CargoOrderingService)
+///      - GET /api/v1/deliveries (до CargoOrderingManager)
 ///      - GET /api/v1/postaboutdrivers (до DriversBlogManagement)
 ///    Клієнт робить ОДИН легкий запит:
 ///      -> GET /api/v1/driver-dashboard/{id}

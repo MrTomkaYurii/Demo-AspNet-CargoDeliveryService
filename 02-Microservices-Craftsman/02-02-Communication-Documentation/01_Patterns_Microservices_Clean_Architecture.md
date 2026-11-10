@@ -65,7 +65,7 @@ flowchart TD
         DM_Domain --> DM_DB
     end
 
-    subgraph CO_Context["📦 CargoOrderingService Bounded Context"]
+    subgraph CO_Context["📦 CargoOrderingManager Bounded Context"]
         CO_API["CargoOrdering Web API"]
         CO_MediatR["MediatR CQRS Pipeline"]
         CO_Domain["Logistics Model: Order + Delivery + Shadow Driver"]
@@ -117,7 +117,7 @@ flowchart LR
 * **Моноліт (Блок 1)** схожий на один спільний open-space офіс із загальним паперовим архівом. Будь-який співробітник будь-якого відділу може підійти до однієї шафи з папками. Якщо шафа загориться або хтось випадково пошкодить журнал — зупиняється вся компанія.
 * **Мікросервіси (Блок 2)** схожі на окремі спеціалізовані підрозділи:
   1. **Відділ кадрів (`DriversManagement`)**: веде повне досьє працівника (паспорт, категорія посвідчення, медогляд, нарахування витрат, закріплена вантажівка).
-  2. **Диспетчерський центр замовлень (`CargoOrderingService`)**: оформлює товарно-транспортні накладні, рейси та доставку. Диспетчеру не потрібні дані про сімейний стан водія чи його витрати на ремонт авто — йому потрібні лише `Id`, ПІБ, телефон і номер посвідчення.
+  2. **Диспетчерський центр замовлень (`CargoOrderingManager`)**: оформлює товарно-транспортні накладні, рейси та доставку. Диспетчеру не потрібні дані про сімейний стан водія чи його витрати на ремонт авто — йому потрібні лише `Id`, ПІБ, телефон і номер посвідчення.
   3. **Корпоративний блог (`DriversBlogManagement`)**: публікує статті, новини доріг та збирає лайки від колег.
   
 Кожен відділ має **свій власний закритий сейф (Database-per-Service)**. Жоден співробітник не має прямого ключа від сейфа іншого відділу — взаємодія відбувається виключно через офіційні телефонні запити (**gRPC / HTTP**) або інформаційні бюлетені (**RabbitMQ**).
@@ -136,11 +136,11 @@ flowchart LR
 | Мікросервіс | Роль сутності водія | Які поля містить модель | Посилання на вихідний код проєкту |
 | :--- | :--- | :--- | :--- |
 | **`DriversManagement`** | **Rich Aggregate Root** (Повний агрегат, джерело правди) | Повне досьє: `FirstName`, `LastName`, `DriverLicenseNumber`, `Birthdate`, `Gender`, `Company`, `Photo`, `Expences` та ін. | [👉 **`Driver.cs`**](../DriversManagement/src/DriversManagement/Domain/Drivers/Driver.cs) — фабрика `Create` [#L67](../DriversManagement/src/DriversManagement/Domain/Drivers/Driver.cs#L67) |
-| **`CargoOrderingService`** | **Logistics Shadow Model** (Тіньова копія) | Тільки логістичні атрибути: `Id`, `FirstName`, `LastName`, `DriverLicenseNumber`, `Phone`, зв'язок із `Deliveries` та `Orders` | [👉 **`Driver.cs`**](../CargoOrderingService/src/CargoOrderingService/Domain/Drivers/Driver.cs) — `CreateWithId` [#L31](../CargoOrderingService/src/CargoOrderingService/Domain/Drivers/Driver.cs#L31) |
+| **`CargoOrderingManager`** | **Logistics Shadow Model** (Тіньова копія) | Тільки логістичні атрибути: `Id`, `FirstName`, `LastName`, `DriverLicenseNumber`, `Phone`, зв'язок із `Deliveries` та `Orders` | [👉 **`Driver.cs`**](../CargoOrderingManager/src/CargoOrderingManager/Domain/Drivers/Driver.cs) — `CreateWithId` [#L31](../CargoOrderingManager/src/CargoOrderingManager/Domain/Drivers/Driver.cs#L31) |
 | **`DriversBlogManagement`** | **Social Shadow Model** (Соціальна копія) | Тільки публічні реквізити автора: `Id`, `FirstName`, `LastName`, `Likes` і пов'язаний `PostAboutDriver` | [👉 **`Driver.cs`**](../DriversBlogManagement/src/DriversBlogManagement/Domain/Drivers/Driver.cs) — `CreateWithId` [#L34](../DriversBlogManagement/src/DriversBlogManagement/Domain/Drivers/Driver.cs#L34) |
 
 > [!IMPORTANT]
-> **Автономність даних:** Якщо мікросервіс `DriversManagement` вимкнеться для технічного обслуговування, сервіс `CargoOrderingService` **продовжує повноцінно працювати**, тому що всі потрібні водії вже репліковані у його власну таблицю `drivers`!
+> **Автономність даних:** Якщо мікросервіс `DriversManagement` вимкнеться для технічного обслуговування, сервіс `CargoOrderingManager` **продовжує повноцінно працювати**, тому що всі потрібні водії вже репліковані у його власну таблицю `drivers`!
 
 ### Чому тіньова копія має той самий `Id`
 Тіньовий водій створюється з **ідентифікатором оригіналу** (`CreateWithId(msg.DriverId, ...)`) — це «ключ кореляції» між контекстами: агрегатор питає доставки за тим самим `driverId`, за яким шукав водія в DriversManagement.

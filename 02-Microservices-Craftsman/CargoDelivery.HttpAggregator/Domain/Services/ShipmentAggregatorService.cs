@@ -56,7 +56,7 @@ public sealed class ShipmentAggregatorService : IShipmentAggregatorService
         // Прапорець часткової деградації. Його змінює лямбда onFailure у SafeFetchRoadNotesAsync.
         bool isDegraded = false;
 
-        // КРОК 2: Паралельний Fan-Out (Scatter) до CargoOrderingService та DriversBlogManagement.
+        // КРОК 2: Паралельний Fan-Out (Scatter) до CargoOrderingManager та DriversBlogManagement.
         // Зверніть увагу: тут НЕМАЄ await — ми лише ЗАПУСКАЄМО обидва HTTP-запити. Обидва вже
         // летять мережею одночасно, а потік не блокується (очікування I/O не займає потоків пулу).
         // Доставки — жорстка залежність: їхній виняток НЕ перехоплюється і дійде до контролера (503).

@@ -9,8 +9,8 @@ using Microsoft.Extensions.Logging;
 /// 📦 CARGO ORDER API TYPED HTTP CLIENT (.NET 10 & IHttpClientFactory)
 /// ------------------------------------------------------------------------------------
 /// ПРИЗНАЧЕННЯ:
-/// Опитує мікросервіс CargoOrderingService за логічною адресою
-/// "https+http://cargoorderingservice".
+/// Опитує мікросервіс CargoOrderingManager за логічною адресою
+/// "https+http://cargoorderingmanager".
 ///
 /// ДОМЕН:
 /// Отримує доставки водія для відображення в диспетчерському дашборді.
@@ -35,7 +35,7 @@ public sealed class CargoOrderApiClient : ICargoOrderApiClient
     public async Task<List<AggregatedCargoOrderDto>> GetActiveOrdersByDriverIdAsync(
         Guid driverId, CancellationToken cancellationToken = default)
     {
-        _logger.LogInformation("Отримання доставок з CargoOrderingService для водія {DriverId}", driverId);
+        _logger.LogInformation("Отримання доставок з CargoOrderingManager для водія {DriverId}", driverId);
 
         try
         {
@@ -47,7 +47,7 @@ public sealed class CargoOrderApiClient : ICargoOrderApiClient
         }
         catch (HttpRequestException ex)
         {
-            _logger.LogWarning(ex, "Помилка зв'язку з CargoOrderingService для водія {DriverId}", driverId);
+            _logger.LogWarning(ex, "Помилка зв'язку з CargoOrderingManager для водія {DriverId}", driverId);
             throw;
         }
     }

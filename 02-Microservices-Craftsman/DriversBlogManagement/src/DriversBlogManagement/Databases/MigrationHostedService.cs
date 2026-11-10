@@ -38,7 +38,7 @@ public class MigrationHostedService<TDbContext> : IHostedService
             // потрібно створити автоматично:
             //   1. Якщо у збірці є EF Core міграції — застосовуємо їх (MigrateAsync). Це
             //      еталонний підхід: історія змін схеми зберігається в __EFMigrationsHistory.
-            //   2. Якщо міграцій немає (наприклад, у CargoOrderingService) — створюємо схему
+            //   2. Якщо міграцій немає (наприклад, у CargoOrderingManager) — створюємо схему
             //      напряму з поточної моделі (EnsureCreatedAsync). Без цього MigrateAsync
             //      створив би лише порожню БД без жодної таблиці.
             // ⚠️ Не змішуйте ці підходи на ОДНІЙ базі: EnsureCreated не веде історію міграцій,

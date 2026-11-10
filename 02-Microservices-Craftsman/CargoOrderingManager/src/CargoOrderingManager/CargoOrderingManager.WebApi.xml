@@ -1,0 +1,395 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>CargoOrderingManager</name>
+    </assembly>
+    <members>
+        <member name="M:CargoOrderingManager.Controllers.v1.DeliveriesController.GetDeliveries(CargoOrderingManager.Domain.Deliveries.Dtos.DeliveryParametersDto)">
+            <summary>
+            Gets a list of all Deliveries.
+            </summary>
+        </member>
+        <member name="M:CargoOrderingManager.Controllers.v1.DeliveriesController.GetAllDeliveries">
+            <summary>
+            Gets a list of all Deliveries.
+            </summary>
+        </member>
+        <member name="M:CargoOrderingManager.Controllers.v1.DeliveriesController.GetDelivery(System.Guid)">
+            <summary>
+            Gets a single Delivery by ID.
+            </summary>
+        </member>
+        <member name="M:CargoOrderingManager.Controllers.v1.DeliveriesController.AddDelivery(CargoOrderingManager.Domain.Deliveries.Dtos.DeliveryForCreationDto)">
+            <summary>
+            Creates a new Delivery record.
+            </summary>
+        </member>
+        <member name="M:CargoOrderingManager.Controllers.v1.DeliveriesController.UpdateDelivery(System.Guid,CargoOrderingManager.Domain.Deliveries.Dtos.DeliveryForUpdateDto)">
+            <summary>
+            Updates an entire existing Delivery.
+            </summary>
+        </member>
+        <member name="M:CargoOrderingManager.Controllers.v1.DeliveriesController.DeleteDelivery(System.Guid)">
+            <summary>
+            Deletes an existing Delivery record.
+            </summary>
+        </member>
+        <member name="T:CargoOrderingManager.Controllers.v1.InternalDeliveriesController">
+             <summary>
+             ====================================================================================
+             🔒 ВНУТРІШНІЙ (SERVICE-TO-SERVICE) API ДОСТАВОК
+             ------------------------------------------------------------------------------------
+             ПРИЗНАЧЕННЯ:
+             Легкий read-only ендпоінт для синхронних викликів від інших мікросервісів
+             (CargoDelivery.HttpAggregator та BFF у DriversManagement). Повертає ЛИШЕ доставки
+             конкретного водія у плоскому вигляді, потрібному агрегаторам.
+            
+             ЧОМУ НЕ ЗВИЧАЙНИЙ /api/deliveries?
+             1. Публічний DeliveriesController захищений [Authorize] (JWT від Keycloak) та
+                перевірками дозволів HeimGuard — сервіс-клієнт без токена отримав би 401.
+             2. Публічний ендпоінт повертає ВСІ доставки з пагінацією, без фільтра за водієм.
+            
+             БЕЗПЕКА (важливо розуміти!):
+             [AllowAnonymous] тут — свідоме спрощення для навчального локального стенду Aspire.
+             У продакшні внутрішній API захищають інакше, ніж зовнішній:
+               - мережеві політики (ендпоінт недоступний з Ingress/інтернету);
+               - mTLS між сервісами (service mesh: Istio, Linkerd);
+               - OAuth2 Client Credentials — сервіс отримує власний токен зі scope "deliveries.read".
+             ====================================================================================
+             </summary>
+        </member>
+        <member name="M:CargoOrderingManager.Controllers.v1.InternalDeliveriesController.GetByDriver(System.Guid,System.Threading.CancellationToken)">
+            <summary>
+            Повертає доставки водія. Приклад: GET api/internal/deliveries?driverId={guid}
+            </summary>
+        </member>
+        <member name="M:CargoOrderingManager.Controllers.v1.InternalDeliveriesController.SeedDemoDelivery(System.Guid,System.Threading.CancellationToken)">
+            <summary>
+            🧪 ДЕМО-СІД: створює доставку, призначену тіньовому водієві, щоб агрегатор мав що показати.
+            Приклад: POST api/internal/deliveries/demo-seed?driverId={guid}
+            <para>
+            Публічне API замовлень не має операції "призначити водія", хоча доменна модель це вміє
+            (Delivery.SetDriver). Цей ендпоінт використовує саме доменний метод — без обходу інваріантів.
+            </para>
+            </summary>
+        </member>
+        <member name="M:CargoOrderingManager.Controllers.v1.OrdersController.GetOrders(CargoOrderingManager.Domain.Orders.Dtos.OrderParametersDto)">
+            <summary>
+            Gets a list of all Orders.
+            </summary>
+        </member>
+        <member name="M:CargoOrderingManager.Controllers.v1.OrdersController.GetAllOrders">
+            <summary>
+            Gets a list of all Orders.
+            </summary>
+        </member>
+        <member name="M:CargoOrderingManager.Controllers.v1.OrdersController.GetOrder(System.Guid)">
+            <summary>
+            Gets a single Order by ID.
+            </summary>
+        </member>
+        <member name="M:CargoOrderingManager.Controllers.v1.OrdersController.AddOrder(CargoOrderingManager.Domain.Orders.Dtos.OrderForCreationDto)">
+            <summary>
+            Creates a new Order record.
+            </summary>
+        </member>
+        <member name="M:CargoOrderingManager.Controllers.v1.OrdersController.UpdateOrder(System.Guid,CargoOrderingManager.Domain.Orders.Dtos.OrderForUpdateDto)">
+            <summary>
+            Updates an entire existing Order.
+            </summary>
+        </member>
+        <member name="M:CargoOrderingManager.Controllers.v1.OrdersController.DeleteOrder(System.Guid)">
+            <summary>
+            Deletes an existing Order record.
+            </summary>
+        </member>
+        <member name="M:CargoOrderingManager.Controllers.v1.PermissionsController.GetPermissions">
+            <summary>
+            Gets a list of all available permissions.
+            </summary>
+        </member>
+        <member name="M:CargoOrderingManager.Controllers.v1.PermissionsController.GetAssignedPermissions">
+            <summary>
+            Gets a list of the current user's assigned permissions.
+            </summary>
+        </member>
+        <member name="M:CargoOrderingManager.Controllers.v1.RolePermissionsController.GetRolePermissions(CargoOrderingManager.Domain.RolePermissions.Dtos.RolePermissionParametersDto)">
+            <summary>
+            Gets a list of all RolePermissions.
+            </summary>
+        </member>
+        <member name="M:CargoOrderingManager.Controllers.v1.RolePermissionsController.GetRolePermission(System.Guid)">
+            <summary>
+            Gets a single RolePermission by ID.
+            </summary>
+        </member>
+        <member name="M:CargoOrderingManager.Controllers.v1.RolePermissionsController.AddRolePermission(CargoOrderingManager.Domain.RolePermissions.Dtos.RolePermissionForCreationDto)">
+            <summary>
+            Creates a new RolePermission record.
+            </summary>
+        </member>
+        <member name="M:CargoOrderingManager.Controllers.v1.RolePermissionsController.UpdateRolePermission(System.Guid,CargoOrderingManager.Domain.RolePermissions.Dtos.RolePermissionForUpdateDto)">
+            <summary>
+            Updates an entire existing RolePermission.
+            </summary>
+        </member>
+        <member name="M:CargoOrderingManager.Controllers.v1.RolePermissionsController.DeleteRolePermission(System.Guid)">
+            <summary>
+            Deletes an existing RolePermission record.
+            </summary>
+        </member>
+        <member name="M:CargoOrderingManager.Controllers.v1.RolesController.GetRoles">
+            <summary>
+            Gets a list of all available roles.
+            </summary>
+        </member>
+        <member name="M:CargoOrderingManager.Controllers.v1.UsersController.AddRole(System.Guid,System.String)">
+            <summary>
+            Adds a new role to a user.
+            </summary>
+        </member>
+        <member name="M:CargoOrderingManager.Controllers.v1.UsersController.RemoveRole(System.Guid,System.String)">
+            <summary>
+            Removes a role from a User
+            </summary>
+        </member>
+        <member name="M:CargoOrderingManager.Controllers.v1.UsersController.GetUsers(CargoOrderingManager.Domain.Users.Dtos.UserParametersDto)">
+            <summary>
+            Gets a list of all Users.
+            </summary>
+        </member>
+        <member name="M:CargoOrderingManager.Controllers.v1.UsersController.GetUser(System.Guid)">
+            <summary>
+            Gets a single User by ID.
+            </summary>
+        </member>
+        <member name="M:CargoOrderingManager.Controllers.v1.UsersController.AddUser(CargoOrderingManager.Domain.Users.Dtos.UserForCreationDto)">
+            <summary>
+            Creates a new User record.
+            </summary>
+        </member>
+        <member name="M:CargoOrderingManager.Controllers.v1.UsersController.UpdateUser(System.Guid,CargoOrderingManager.Domain.Users.Dtos.UserForUpdateDto)">
+            <summary>
+            Updates an entire existing User.
+            </summary>
+        </member>
+        <member name="M:CargoOrderingManager.Controllers.v1.UsersController.DeleteUser(System.Guid)">
+            <summary>
+            Deletes an existing User record.
+            </summary>
+        </member>
+        <member name="T:CargoOrderingManager.Databases.DemoDataSeeder">
+             <summary>
+             ====================================================================================
+             🌱 ДЕМО-СІДИНГ CargoOrderingManager (Bogus) — ЗАМОВЛЕННЯ ТА ДОСТАВКИ
+             ------------------------------------------------------------------------------------
+             ПРИЗНАЧЕННЯ:
+             Створює 50 замовлень (Order) разом із доставками (Delivery), призначеними тіньовим
+             водіям, щоб BFF (driver-dashboard) і агрегатор (shipment-summary) показували рейси.
+            
+             ЧОМУ СПЕРШУ ЧЕКАЄМО:
+             Тіньових водіїв цей сервіс отримує асинхронно — подією IDriverCreated від
+             DriversManagement (споживач SyncDriverInOrdering). Сідер чекає, доки кількість водіїв
+             стабілізується, і лише тоді призначає їм замовлення (Eventual Consistency).
+            
+             МОДЕЛЬ:
+             Order ↔ Delivery — "один-до-одного" (Order отримує Id своєї Delivery). Order вже має
+             порожню Delivery за замовчуванням, тому ми заповнюємо її доменним методом Update(...)
+             і призначаємо водія і замовленню, і доставці (SetDriver).
+            
+             Працює лише в Development і лише якщо замовлень ще немає.
+             ====================================================================================
+             </summary>
+        </member>
+        <member name="M:CargoOrderingManager.Databases.DemoDataSeeder.WaitForReplicatedDriversAsync(CargoOrderingManager.Databases.OrderingContext,System.Threading.CancellationToken)">
+            <summary>
+            Очікує, доки тіньові водії надійдуть через RabbitMQ: кількість > 0 і не змінюється
+            протягом двох перевірок поспіль. Максимум ~3 хв.
+            </summary>
+        </member>
+        <member name="M:CargoOrderingManager.Databases.EntityConfigurations.DeliveryConfiguration.Configure(Microsoft.EntityFrameworkCore.Metadata.Builders.EntityTypeBuilder{CargoOrderingManager.Domain.Deliveries.Delivery})">
+            <summary>
+            The database configuration for Deliveries. 
+            </summary>
+        </member>
+        <member name="M:CargoOrderingManager.Databases.EntityConfigurations.OrderConfiguration.Configure(Microsoft.EntityFrameworkCore.Metadata.Builders.EntityTypeBuilder{CargoOrderingManager.Domain.Orders.Order})">
+            <summary>
+            The database configuration for Orders. 
+            </summary>
+        </member>
+        <member name="M:CargoOrderingManager.Databases.EntityConfigurations.RolePermissionConfiguration.Configure(Microsoft.EntityFrameworkCore.Metadata.Builders.EntityTypeBuilder{CargoOrderingManager.Domain.RolePermissions.RolePermission})">
+            <summary>
+            The database configuration for RolePermissions. 
+            </summary>
+        </member>
+        <member name="M:CargoOrderingManager.Databases.EntityConfigurations.UserConfiguration.Configure(Microsoft.EntityFrameworkCore.Metadata.Builders.EntityTypeBuilder{CargoOrderingManager.Domain.Users.User})">
+            <summary>
+            The database configuration for Users. 
+            </summary>
+        </member>
+        <member name="M:CargoOrderingManager.Databases.EntityConfigurations.UserRoleConfiguration.Configure(Microsoft.EntityFrameworkCore.Metadata.Builders.EntityTypeBuilder{CargoOrderingManager.Domain.Users.UserRole})">
+            <summary>
+            The database configuration for UserRoles. 
+            </summary>
+        </member>
+        <member name="P:CargoOrderingManager.Domain.Addresses.Address.Line1">
+            <summary>
+            Address line 1 (e.g., street, PO Box, or company name).
+            </summary>
+        </member>
+        <member name="P:CargoOrderingManager.Domain.Addresses.Address.Line2">
+            <summary>
+            Address line 2 (e.g., apartment, suite, unit, or building).
+            </summary>
+        </member>
+        <member name="P:CargoOrderingManager.Domain.Addresses.Address.City">
+            <summary>
+            City, district, suburb, town, or village.
+            </summary>
+        </member>
+        <member name="P:CargoOrderingManager.Domain.Addresses.Address.State">
+            <summary>
+            State, county, province, or region.
+            </summary>
+        </member>
+        <member name="P:CargoOrderingManager.Domain.Addresses.Address.PostalCode">
+            <summary>
+            ZIP or postal code.
+            </summary>
+        </member>
+        <member name="P:CargoOrderingManager.Domain.Addresses.Address.Country">
+            <summary>
+            Two-letter country code <a href="https://en.wikipedia.org/wiki/ISO_3166-1_alpha-2">(ISO 3166-1 alpha-2)</a>.
+            </summary>
+        </member>
+        <member name="T:CargoOrderingManager.Domain.Drivers.Consumers.SyncDriverInOrdering">
+             <summary>
+             ====================================================================================
+             📬 АРХІТЕКТУРНИЙ ПАТЕРН: MASSTRANSIT CONSUMER У CARGOORDERINGSERVICE
+             ------------------------------------------------------------------------------------
+             АРХІТЕКТУРНА КОНЦЕПЦІЯ:
+            
+             1. ПРИЗНАЧЕННЯ:
+                Споживач MassTransit у мікросервісі замовлень вантажів (CargoOrderingManager).
+                Автоматично реплікує сутності водіїв у локальну базу даних Ordering Context
+                при отриманні доменних подій через RabbitMQ Fanout Exchange.
+            
+             2. АВТОНОМНІСТЬ СЕРВІСУ ЗАМОВЛЕНЬ (AUTONOMY):
+                Коли диспетчер призначає водія на вантажну доставку, сервісу CargoOrderingManager
+                не потрібно робити мережевий REST або gRPC запит до DriversManagement.
+                Вся необхідна інформація (Id, ПІБ, посвідчення, телефон) вже збережена
+                у власній локальній таблиці Drivers завдяки цьому споживачу.
+                Якщо сервіс DriversManagement тимчасово вимкнено — CargoOrderingManager
+                продовжує повноцінно працювати й оформлювати рейси!
+            
+             3. ОБРОБКА ДВОХ ПОДІЙ В ОДНОМУ КЛАСІ:
+                Клас реалізує інтерфейси:
+                  - IConsumer&lt;IDriverCreated&gt;
+                  - IConsumer&lt;IDriverUpdated&gt;
+                MassTransit самостійно прив'язує обидві черги до відповідних методів Consume().
+             ====================================================================================
+             </summary>
+        </member>
+        <member name="M:CargoOrderingManager.Domain.Drivers.Consumers.SyncDriverInOrdering.Consume(MassTransit.ConsumeContext{SharedKernel.Messages.IDriverCreated})">
+            <summary>
+            Обробляє подію IDriverCreated та створює запис у локальній БД замовлень.
+            </summary>
+        </member>
+        <member name="M:CargoOrderingManager.Domain.Drivers.Consumers.SyncDriverInOrdering.Consume(MassTransit.ConsumeContext{SharedKernel.Messages.IDriverUpdated})">
+            <summary>
+            Обробляє подію IDriverUpdated та оновлює локальні реквізити водія.
+            </summary>
+        </member>
+        <member name="M:CargoOrderingManager.Domain.Orders.Features.AddOrder.Handler.Handle(CargoOrderingManager.Domain.Orders.Features.AddOrder.Command,System.Threading.CancellationToken)">
+            <summary>
+            ====================================================================================
+            📬 ОБРОБНИК КОМАНДИ СТВОРЕННЯ ЗАМОВЛЕННЯ З ПУБЛІКАЦІЄЮ IOrderCreated
+            ------------------------------------------------------------------------------------
+            1. ВАЛІДАЦІЯ ТА АВТОРИЗАЦІЯ:
+               Перевіряємо дозвіл 'CanAddOrder' через HeimGuard.
+            2. ЗБЕРЕЖЕННЯ В ЛОКАЛЬНІЙ БАЗІ (CARGOORDERING DB):
+               Створюємо сутність Order через фабричний метод Order.Create(orderToAdd).
+               Фіксуємо транзакцію через _unitOfWork.CommitChanges.
+            3. ПАТЕРН EVENT-DRIVEN PUBLISHING (Шина MassTransit / RabbitMQ):
+               Після успішного збереження в БД публікуємо спільний контракт IOrderCreated.
+               MassTransit надсилає повідомлення в Fanout Exchange 'order-created'.
+            4. DECOUPLING (Слабкий зв'язок):
+               Сервіс замовлень не знає, хто саме підписаний на подію (білінг, трекінг чи аналітика).
+               Його обов'язок — лише повідомити про факт створення замовлення.
+            ====================================================================================
+            </summary>
+        </member>
+        <member name="T:CargoOrderingManager.Extensions.Services.ConsumerRegistrations.SyncDriverInOrderingEndpointRegistration">
+             <summary>
+             ====================================================================================
+             📬 ТОПОЛОГІЯ ТА НАЛАШТУВАННЯ ЧЕРГИ СПОЖИВАЧА У CARGOORDERINGSERVICE
+             ------------------------------------------------------------------------------------
+             ПРИЗНАЧЕННЯ:
+             Налаштовує кінцеву точку прийому повідомлень (ReceiveEndpoint) 'ordering-sync-driver'
+             для мікросервісу замовлень.
+            
+             КЛЮЧОВІ ПАРАМЕТРИ RABBITMQ:
+             1. ConfigureConsumeTopology = false:
+                Вимикає автоматичне створення черг за замовчуванням у MassTransit. Ми повністю
+                контролюємо назву черги, її параметри та зв'язки (Bindings).
+             2. SetQuorumQueue():
+                Вмикає Quorum Queues (на базі консенсусу Raft у кластері RabbitMQ 3.8+).
+                Забезпечує реплікацію та стійкість до втрати даних при перезавантаженні брокера.
+             3. (Видалено) SetQueueArgument("declare", "lazy") — неіснуючий аргумент RabbitMQ.
+                Кворум-черга й так зберігає повідомлення на диску (див. коментар у коді нижче).
+             4. Bind("driver-created", Fanout) &amp; Bind("driver-updated", Fanout):
+                Створює прив'язки (Bindings) між головними обмінниками подій водіїв та цією чергою.
+             ====================================================================================
+             </summary>
+        </member>
+        <member name="T:CargoOrderingManager.Extensions.Services.MassTransitServiceExtension">
+             <summary>
+             ====================================================================================
+             📬 АРХІТЕКТУРНИЙ ПАТЕРН: РЕЄСТРАЦІЯ ТА КОНФІГУРАЦІЯ ШИНИ MASSTRANSIT (RABBITMQ)
+             ------------------------------------------------------------------------------------
+             ПРИЗНАЧЕННЯ:
+             Налаштовує брокер повідомлень MassTransit для сервісу замовлень з підтримкою:
+             1. Aspire Connection String (автоматичне зв'язування з контейнером через Aspire AppHost).
+             2. Класичної конфігурації RabbitMqOptions (для роботи в standalone Docker-compose/K8s).
+             3. In-Memory Transport Fallback (для тестів та локального запуску без запущеного брокера).
+            
+             ПРИНЦИП РОБОТИ:
+             - mt.AddConsumers(): автоматично знаходить та реєструє споживача SyncDriverInOrdering.
+             - cfg.OrderCreatedEndpoint(): налаштовує Fanout Exchange для публікації IOrderCreated.
+             - cfg.SyncDriverInOrderingEndpoint(): створює Quorum Queue для підписки на зміни водіїв.
+             ====================================================================================
+             </summary>
+        </member>
+        <member name="T:CargoOrderingManager.Extensions.Services.OpenTelemetryServiceExtension">
+            <summary>
+            Точка підключення спільних стандартів Aspire (CargoDelivery.ServiceDefaults).
+            <para>
+            Історично Craftsman налаштовував тут OpenTelemetry + Jaeger вручну. Тепер увесь конвеєр
+            спостережуваності (OTLP-логи, метрики, трейси), Health Checks, Service Discovery і
+            стандартний конвеєр Polly для HttpClient підключає ОДИН виклик builder.AddServiceDefaults()
+            (див. Aspire/CargoDelivery.ServiceDefaults/Extensions.cs). Параметри configuration і
+            serviceName залишено для сумісності сигнатури з викликом у WebAppServiceConfiguration:
+            ім'я сервісу в телеметрії тепер задає Aspire через змінну OTEL_SERVICE_NAME.
+            </para>
+            </summary>
+        </member>
+        <member name="T:CargoOrderingManager.Extensions.Services.ProducerRegistrations.OrderCreatedEndpointRegistration">
+            <summary>
+            ====================================================================================
+            📬 ТОПОЛОГІЯ ОБМІННИКА ДЛЯ ПОДІЇ СТВОРЕННЯ ЗАМОВЛЕННЯ (IOrderCreated)
+            ------------------------------------------------------------------------------------
+            ПРИЗНАЧЕННЯ:
+            Налаштовує RabbitMQ Fanout Exchange 'order-created' для публікації подій замовлень.
+            Будь-який новий мікросервіс (наприклад, Billing або Notifications) може підключитися
+            до шини, створити власну чергу, прив'язатися до 'order-created' та отримувати події
+            без внесення змін у сервіс CargoOrderingManager!
+            ====================================================================================
+            </summary>
+        </member>
+        <member name="M:CargoOrderingManager.Extensions.Services.WebAppServiceConfiguration.AddBoundaryServices(Microsoft.Extensions.DependencyInjection.IServiceCollection,System.Reflection.Assembly[])">
+            <summary>
+            Registers all services in the assembly of the given interface.
+            </summary>
+        </member>
+    </members>
+</doc>

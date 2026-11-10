@@ -38,11 +38,11 @@
 flowchart TD
     User["👤 Диспетчер"] -->|"HTTP GET"| Agg["🛡️ HttpAggregator"]
     Agg -->|"HTTP GET"| DM["🚚 DriversManagement"]
-    Agg -->|"HTTP GET"| CO["📦 CargoOrderingService"]
+    Agg -->|"HTTP GET"| CO["📦 CargoOrderingManager"]
     Agg -->|"HTTP GET"| DB["📝 DriversBlogManagement"]
     
     DM -->|"SQL SELECT"| SQL1[("💾 SQL Server: dev_driversmanagement")]
-    CO -->|"SQL SELECT"| SQL2[("💾 SQL Server: dev_cargoorderingservice")]
+    CO -->|"SQL SELECT"| SQL2[("💾 SQL Server: dev_cargoorderingmanager")]
     DB -->|"SQL SELECT"| SQL3[("💾 SQL Server: dev_driversblogmanagement")]
     
     DM -.->|"AMQP Publish"| RMQ["🐰 RabbitMQ"]
@@ -99,8 +99,8 @@ graph TD
     S1 --> S1s["Server: DriversManagement<br/>GET api/internal/drivers/{id:guid}"]
     S1s --> S1_1["💾 Client: SQL SELECT drivers<br/>(SqlClient instrumentation)"]
     
-    Root --> S2["📦 Client: GET → cargoorderingservice<br/>api/internal/deliveries"]
-    S2 --> S2s["Server: CargoOrderingService"]
+    Root --> S2["📦 Client: GET → cargoorderingmanager<br/>api/internal/deliveries"]
+    S2 --> S2s["Server: CargoOrderingManager"]
     S2s --> S2_1["💾 Client: SQL SELECT deliveries"]
     
     Root --> S3["📝 Client: GET → driversblogmanagement<br/>api/internal/postaboutdrivers"]
@@ -263,7 +263,7 @@ gantt
     SQL SELECT drivers                                    :active, dm_sql, 11, 23
 
     section CargoOrdering
-    Client GET cargoorderingservice                       :active, co_http, 32, 78
+    Client GET cargoorderingmanager                       :active, co_http, 32, 78
     Server GET api/internal/deliveries                    :active, co_srv, 34, 76
     SQL SELECT deliveries                                 :active, co_sql, 38, 70
 
@@ -363,7 +363,7 @@ sequenceDiagram
     participant DM as 🚚 DriversManagement (Producer)
     participant RMQ as 🐰 RabbitMQ (Broker)
     participant DB as 📝 DriversBlogManagement (Consumer)
-    participant CO as 📦 CargoOrderingService (Consumer)
+    participant CO as 📦 CargoOrderingManager (Consumer)
 
     User->>DM: POST /api/drivers (новий TraceId)
     Note over DM: Span Server "POST api/drivers" → SQL INSERT
@@ -382,7 +382,7 @@ sequenceDiagram
 | :--- | :--- | :--- |
 | `POST api/drivers` | driversmanagement | 0.52 с |
 | `send driver-created` | driversmanagement | 99 мс |
-| `ordering-sync-driver receive` → `process` | cargoorderingservice | 0.59 с / 0.51 с |
+| `ordering-sync-driver receive` → `process` | cargoorderingmanager | 0.59 с / 0.51 с |
 | `sync-updated-driver receive` → `process` | driversblogmanagement | 0.55 с / 0.47 с |
 
 А в **Structured logs** записи `==>> [MassTransit Blog] …` та `==>> [MassTransit Ordering] …` з обох споживачів мають **той самий** TraceId, що і HTTP-запит.
@@ -459,4 +459,4 @@ flowchart TD
 2. Виконайте GET-запит `api/simulation/slow?delaySeconds=2` на агрегаторі (`https://localhost:57390`).
 3. Знайдіть створений трейс у дашборді. Переконайтеся, що на діаграмі Ганта чітко видно затримку тривалістю ≈2000 мс.
 4. Викличте `GET /api/v1/resilience-demo/retry` і знайдіть у трейсі три клієнтські спани до `/api/simulation/flaky`. Виміряйте паузи між ними.
-5. Створіть водія (`POST /api/drivers`) і знайдіть трейс, у якому присутні **три** сервіси: driversmanagement, driversblogmanagement, cargoorderingservice.
+5. Створіть водія (`POST /api/drivers`) і знайдіть трейс, у якому присутні **три** сервіси: driversmanagement, driversblogmanagement, cargoorderingmanager.

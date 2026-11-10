@@ -31,7 +31,7 @@
 <a id="section-1"></a>
 ## 1. Теоретичний базис: Проблема прямої взаємодії (Direct Client-to-Microservice)
 
-У розподіленій системі, де кожен бізнес-домен виділено в окремий автономний мікросервіс (у нашому випадку: управління водіями `DriversManagement`, замовлення вантажів `CargoOrderingService`, дорожні публікації `DriversBlogManagement`), клієнтський застосунок (Web SPA, мобільний застосунок або автоматизоване робоче місце диспетчера) стикається з фундаментальною проблемою оркестрації даних.
+У розподіленій системі, де кожен бізнес-домен виділено в окремий автономний мікросервіс (у нашому випадку: управління водіями `DriversManagement`, замовлення вантажів `CargoOrderingManager`, дорожні публікації `DriversBlogManagement`), клієнтський застосунок (Web SPA, мобільний застосунок або автоматизоване робоче місце диспетчера) стикається з фундаментальною проблемою оркестрації даних.
 
 ### Антипатерн «Товстий клієнт-оркестратор» (Client-Driven Aggregation)
 
@@ -43,7 +43,7 @@ flowchart TD
     
     subgraph WAN ["🌐 Зовнішня мережа WAN / Інтернет (Висока латентність, обмежена смуга)"]
         Client -->|"1. GET /api/drivers/{id} (120 мс)"| DM["🚚 DriversManagement"]
-        Client -->|"2. GET /api/deliveries?driverId={id} (140 мс)"| CO["📦 CargoOrderingService"]
+        Client -->|"2. GET /api/deliveries?driverId={id} (140 мс)"| CO["📦 CargoOrderingManager"]
         Client -->|"3. GET /api/postaboutdrivers?driverId={id} (110 мс)"| DB["📝 DriversBlogManagement"]
     end
     
@@ -86,7 +86,7 @@ flowchart TD
     
     subgraph PrivateNet ["🔒 Приватна низьколатентна мережа (LAN / Aspire / k8s)"]
         Agg -->|"⚡ Fan-Out (Паралельно)"| DM["🚚 DriversManagement"]
-        Agg -->|"⚡ Fan-Out (Паралельно)"| CO["📦 CargoOrderingService"]
+        Agg -->|"⚡ Fan-Out (Паралельно)"| CO["📦 CargoOrderingManager"]
         Agg -->|"⚡ Fan-Out (Паралельно)"| DB["📝 DriversBlogManagement"]
         
         DM -.->|"200 OK (Driver DTO)"| Agg
@@ -152,7 +152,7 @@ flowchart TD
     
     subgraph CoreMicroservices ["🚚 Внутрішні бізнес-мікросервіси"]
         Agg -->|"HTTP /api/internal/drivers"| DM["🚚 DriversManagement"]
-        Agg -->|"HTTP /api/internal/deliveries"| CO["📦 CargoOrderingService"]
+        Agg -->|"HTTP /api/internal/deliveries"| CO["📦 CargoOrderingManager"]
         Agg -->|"HTTP /api/internal/postaboutdrivers"| DB["📝 DriversBlogManagement"]
     end
 ```
@@ -169,7 +169,7 @@ flowchart TD
 
 Нехай для формування зведеної інформації рейсу необхідно отримати дані від трьох мікросервісів:
 * $S_1$ (`DriversManagement`): затримка обробки $t_1 = 45\text{ мс}$.
-* $S_2$ (`CargoOrderingService`): затримка обробки $t_2 = 65\text{ мс}$.
+* $S_2$ (`CargoOrderingManager`): затримка обробки $t_2 = 65\text{ мс}$.
 * $S_3$ (`DriversBlogManagement`): затримка обробки $t_3 = 40\text{ мс}$.
 * Затримка внутрішньої локальної мережі (LAN Round-Trip) $t_{\text{lan}} = 2\text{ мс}$ на кожен запит.
 * Затримка зовнішньої клієнтської мережі (WAN Round-Trip) $t_{\text{wan}} = 100\text{ мс}$.
@@ -298,7 +298,7 @@ builder.Services.AddHttpClient<IDriverApiClient, DriverApiClient>(client =>
     client.BaseAddress = new Uri("https+http://driversmanagement"));
 
 builder.Services.AddHttpClient<ICargoOrderApiClient, CargoOrderApiClient>(client =>
-    client.BaseAddress = new Uri("https+http://cargoorderingservice"));
+    client.BaseAddress = new Uri("https+http://cargoorderingmanager"));
 
 // Блог — НЕКРИТИЧНА залежність: замінюємо глобальний конвеєр на короткий бюджет часу
 builder.Services.AddHttpClient<IDriverBlogApiClient, DriverBlogApiClient>(client =>
@@ -500,7 +500,7 @@ var notes = await _driverBlogApiClient.GetRoadNotesByDriverIdAsync(...);
 У мікросервісній архітектурі діє фундаментальне правило: **«Відмова одного некритичного сервісу не повинна призводити до збою всієї бізнес-операції»**.
 
 У нашому сценарії:
-* **Критична залежність (Hard Dependency):** `DriversManagement` (дані про водія) та `CargoOrderingService` (вантажні замовлення). Без них диспетчер не може відправити машину в рейс. При їх недоступності агрегатор чесно повертає **503 Service Unavailable** (ProblemDetails), а не вигадані дані.
+* **Критична залежність (Hard Dependency):** `DriversManagement` (дані про водія) та `CargoOrderingManager` (вантажні замовлення). Без них диспетчер не може відправити машину в рейс. При їх недоступності агрегатор чесно повертає **503 Service Unavailable** (ProblemDetails), а не вигадані дані.
 * **Некритична залежність (Soft Dependency):** `DriversBlogManagement` (нотатки водія про стан дороги, погоду та враження). Якщо сервіс блогу падає через навантаження або перезапуск бази даних, диспетчер все одно повинен мати можливість працювати з водієм і вантажем!
 
 > 🐞 **Що було виправлено.** Раніше `CargoOrderApiClient` при будь-якій помилці повертав **вигаданий** рейс «Терміновий медичний вантаж Київ → Львів». Для критичної залежності це небезпечно: диспетчер бачив «дані», яких не існує. Тепер виняток прокидається, і контролер відповідає 503 ([ShipmentSummaryController.cs#L64](../CargoDelivery.HttpAggregator/Controllers/ShipmentSummaryController.cs#L64)).
@@ -743,10 +743,10 @@ public sealed class SimulationController : ControllerBase
 | Сервіс | Ендпоінт | Файл | Що повертає |
 | :--- | :--- | :--- | :--- |
 | DriversManagement | `GET api/internal/drivers/{id}` | [InternalDriversController.cs#L43](../DriversManagement/src/DriversManagement/Controllers/v1/InternalDriversController.cs#L43) | Компактну картку водія або 404 |
-| CargoOrderingService | `GET api/internal/deliveries?driverId=` | [InternalDeliveriesController.cs#L46](../CargoOrderingService/src/CargoOrderingService/Controllers/v1/InternalDeliveriesController.cs#L46) | Доставки, призначені водієві |
+| CargoOrderingManager | `GET api/internal/deliveries?driverId=` | [InternalDeliveriesController.cs#L46](../CargoOrderingManager/src/CargoOrderingManager/Controllers/v1/InternalDeliveriesController.cs#L46) | Доставки, призначені водієві |
 | DriversBlogManagement | `GET api/internal/postaboutdrivers?driverId=` | [InternalPostAboutDriversController.cs#L45](../DriversBlogManagement/src/DriversBlogManagement/Controllers/v1/InternalPostAboutDriversController.cs#L45) | До 10 останніх постів з коротким анонсом |
 
-Плюс два **демо-сіди** для лабораторних (публічне API не вміє прив'язати доставку чи пост до водія): `POST api/internal/deliveries/demo-seed?driverId=` ([#L78](../CargoOrderingService/src/CargoOrderingService/Controllers/v1/InternalDeliveriesController.cs#L78)) і `POST api/internal/postaboutdrivers/demo-seed?driverId=` ([#L78](../DriversBlogManagement/src/DriversBlogManagement/Controllers/v1/InternalPostAboutDriversController.cs#L78)).
+Плюс два **демо-сіди** для лабораторних (публічне API не вміє прив'язати доставку чи пост до водія): `POST api/internal/deliveries/demo-seed?driverId=` ([#L78](../CargoOrderingManager/src/CargoOrderingManager/Controllers/v1/InternalDeliveriesController.cs#L78)) і `POST api/internal/postaboutdrivers/demo-seed?driverId=` ([#L78](../DriversBlogManagement/src/DriversBlogManagement/Controllers/v1/InternalPostAboutDriversController.cs#L78)).
 
 ### Чому окремий контур — це добра практика
 1. **Принцип мінімально необхідних даних:** внутрішня картка водія не містить паспорта чи адреси — навіть якщо агрегатор скомпрометовано, ці дані з нього не витечуть.
@@ -790,6 +790,6 @@ public sealed class SimulationController : ControllerBase
 1. Запустіть рішення через `CargoDelivery.AppHost` і зачекайте 10–20 с, поки відпрацює демо-сідинг (50 водіїв з доставками та замітками).
 2. Візьміть `id` будь-якого водія: `GET https://localhost:5001/api/drivers/all`. (Або створіть нового водія запитом 1️⃣ і додайте йому демо-доставку та демо-пост запитами 3️⃣, 4️⃣.)
 3. Викличте `GET /api/v1/shipment-summary/{id}` (7️⃣) і переконайтеся, що `aggregationStatus` = `Complete`, а `activeOrders` і `roadNotes` заповнені.
-4. Відкрийте Aspire Dashboard (`https://localhost:17048`) → **Traces** і знайдіть трейс `httpaggregator: GET api/v1/shipment-summary/{driverId:guid}`. Переконайтеся, що спани до `cargoorderingservice` і `driversblogmanagement` починаються одночасно.
+4. Відкрийте Aspire Dashboard (`https://localhost:17048`) → **Traces** і знайдіть трейс `httpaggregator: GET api/v1/shipment-summary/{driverId:guid}`. Переконайтеся, що спани до `cargoorderingmanager` і `driversblogmanagement` починаються одночасно.
 5. Зупиніть ресурс `driversblogmanagement` у дашборді (кнопка ■) та повторіть запит. Переконайтеся, що агрегатор повернув `200 OK` з `isDegraded: true` приблизно за 2 с. Запустіть блог знову (▶) і переконайтеся, що статус повернувся до `Complete`.
-6. Зупиніть `cargoorderingservice` і переконайтеся, що агрегатор повертає `503` з ProblemDetails (`TimeoutRejectedException … 00:00:30`). Зверніть увагу на час: ≈30 с — це стандартний бюджет Polly для критичної залежності. Подумайте, чи прийнятно для диспетчера чекати пів хвилини, і який бюджет ви б обрали.
+6. Зупиніть `cargoorderingmanager` і переконайтеся, що агрегатор повертає `503` з ProblemDetails (`TimeoutRejectedException … 00:00:30`). Зверніть увагу на час: ≈30 с — це стандартний бюджет Polly для критичної залежності. Подумайте, чи прийнятно для диспетчера чекати пів хвилини, і який бюджет ви б обрали.

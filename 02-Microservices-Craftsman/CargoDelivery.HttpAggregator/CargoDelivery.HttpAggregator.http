@@ -43,7 +43,7 @@ Content-Type: application/json
 ### 2️⃣ Перевірити реплікацію: тіньовий водій у блозі (має той самий Id)
 GET {{blog}}/api/drivers
 
-### 3️⃣ Демо-дані: доставка для водія (CargoOrderingService)
+### 3️⃣ Демо-дані: доставка для водія (CargoOrderingManager)
 POST {{ordering}}/api/internal/deliveries/demo-seed?driverId={{driverId}}
 
 ### 4️⃣ Демо-дані: дорожня замітка для водія (DriversBlogManagement)

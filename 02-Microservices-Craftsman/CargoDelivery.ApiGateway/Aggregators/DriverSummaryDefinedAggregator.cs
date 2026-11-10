@@ -29,7 +29,7 @@ namespace CargoDelivery.ApiGateway.Aggregators;
 ///   • Крок 1: Витягує відповідь кожного мікросервісу за його ключем (Route.Key) із ocelot.json.
 ///   • Крок 2 (Guard Check): Якщо сервіс водіїв (DriverProfile) повернув 404 Not Found —
 ///     відразу повертає клієнту змістовну помилку 404 Not Found.
-///   • Крок 3 (Критична залежність): Парсить список активних доставок із CargoOrderingService
+///   • Крок 3 (Критична залежність): Парсить список активних доставок із CargoOrderingManager
 ///     та підраховує їхню кількість (totalActiveDeliveries).
 ///   • Крок 4 (Graceful Degradation — Плавна деградація): Якщо сервіс блогу (DriverBlogNotes)
 ///     впав або повернув помилку 5xx/timeout, шлюз НЕ валить весь запит! Замість цього він
@@ -102,7 +102,7 @@ public sealed class DriverSummaryDefinedAggregator : IDefinedAggregator
         var driverElement = await ParseJsonOrDefaultAsync(driverResp);
 
         // --------------------------------------------------------------------------------
-        // КРОК 3: Обробка доставок водія ("ActiveDeliveries" -> CargoOrderingService :5003)
+        // КРОК 3: Обробка доставок водія ("ActiveDeliveries" -> CargoOrderingManager :5003)
         // --------------------------------------------------------------------------------
         JsonElement deliveriesElement = default;
         int deliveriesCount = 0;

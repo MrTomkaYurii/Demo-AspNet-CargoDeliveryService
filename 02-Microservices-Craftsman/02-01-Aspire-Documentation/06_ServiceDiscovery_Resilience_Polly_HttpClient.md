@@ -63,7 +63,7 @@ flowchart TD
 | **Точка відмови (SPOF)** | Якщо проксі перевантажений, падає зв'язок між усіма сервісами | Немає єдиної точки відмови для передачі даних |
 | **Складність клієнта** | Клієнт простий (звичайний HTTP-виклик) | Клієнт повинен мати бібліотеку резолвінгу адрес |
 
-> 💡 **Зауваження про Kubernetes.** У k8s DNS-ім'я сервісу (`cargoorderingservice.default.svc`) уже є server-side discovery через `kube-proxy`. Бібліотека `Microsoft.Extensions.ServiceDiscovery` вміє працювати і там (провайдер DNS SRV), тому код клієнта з логічним ім'ям однаковий локально в Aspire і в кластері.
+> 💡 **Зауваження про Kubernetes.** У k8s DNS-ім'я сервісу (`cargoorderingmanager.default.svc`) уже є server-side discovery через `kube-proxy`. Бібліотека `Microsoft.Extensions.ServiceDiscovery` вміє працювати і там (провайдер DNS SRV), тому код клієнта з логічним ім'ям однаковий локально в Aspire і в кластері.
 
 > ⚠️ **Нюанс локального Aspire.** Порти наших проєктів фіксовані в `launchSettings.json` (5001–5003, 57390), а DCP ставить перед кожним проєктом **проксі**. Тому навіть з Service Discovery в адресах ви бачите стабільні `https://localhost:500x` — динамічні порти отримують лише контейнери (RabbitMQ, SQL Server).
 

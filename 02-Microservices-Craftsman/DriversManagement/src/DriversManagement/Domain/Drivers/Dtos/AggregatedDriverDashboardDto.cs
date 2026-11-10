@@ -4,7 +4,7 @@ namespace DriversManagement.Domain.Drivers.Dtos;
 /// Зведена DTO-модель для аналітичної панелі водія (Патерн Gateway Aggregator / BFF).
 /// Об'єднує дані з трьох незалежних мікросервісів:
 /// 1. DriversManagement (локальна база: профіль водія, компанія, закріплене авто)
-/// 2. CargoOrderingService (зовнішній HTTP REST: активні рейси та доставки)
+/// 2. CargoOrderingManager (зовнішній HTTP REST: активні рейси та доставки)
 /// 3. DriversBlogManagement (зовнішній HTTP REST / gRPC: останні публікації та активність)
 /// </summary>
 public sealed class AggregatedDriverDashboardDto
@@ -35,7 +35,7 @@ public sealed class AggregatedDriverDashboardDto
     public string? AssignedTruckInfo { get; set; }
 
     /// <summary>
-    /// Список активних доставок із CargoOrderingService (отримано через HTTP Client).
+    /// Список активних доставок із CargoOrderingManager (отримано через HTTP Client).
     /// </summary>
     public List<AggregatedDeliveryDto> ActiveDeliveries { get; set; } = [];
 

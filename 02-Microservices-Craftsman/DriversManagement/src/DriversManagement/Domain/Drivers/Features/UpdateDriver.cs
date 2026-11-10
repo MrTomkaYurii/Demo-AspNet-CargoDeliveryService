@@ -48,7 +48,7 @@ public static class UpdateDriver
         ///    MassTransit спрямовує повідомлення у RabbitMQ Fanout Exchange 'driver-updated',
         ///    який миттєво дублює його у черги:
         ///      - sync-updated-driver (DriversBlogManagement)
-        ///      - ordering-sync-driver (CargoOrderingService)
+        ///      - ordering-sync-driver (CargoOrderingManager)
         /// 4. EVENTUAL CONSISTENCY (Кінцева узгодженість):
         ///    Всі сервіси отримують новий стан водія асинхронно, без блокування клієнтського запиту.
         /// ====================================================================================

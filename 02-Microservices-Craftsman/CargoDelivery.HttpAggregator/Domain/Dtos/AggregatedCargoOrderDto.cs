@@ -1,7 +1,7 @@
 namespace CargoDelivery.HttpAggregator.Domain.Dtos;
 
 /// <summary>
-/// Агреговані дані доставки, отримані з мікросервісу CargoOrderingService
+/// Агреговані дані доставки, отримані з мікросервісу CargoOrderingManager
 /// (ендпоінт api/internal/deliveries?driverId=...).
 /// Імена властивостей збігаються з JSON-полями відповіді (camelCase ↔ PascalCase
 /// System.Text.Json зіставляє автоматично завдяки JsonSerializerDefaults.Web).

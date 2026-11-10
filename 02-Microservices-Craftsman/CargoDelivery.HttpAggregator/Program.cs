@@ -5,7 +5,7 @@
 // 1. Приймає запит диспетчера на отримання зведеного звіту замовлення та водія.
 // 2. Паралельно опрацьовує HTTP-запити до трьох незалежних сервісів через IHttpClientFactory:
 //    - https+http://driversmanagement
-//    - https+http://cargoorderingservice
+//    - https+http://cargoorderingmanager
 //    - https+http://driversblogmanagement
 // 3. Забезпечує Service Discovery, Polly Resilience та наскрізне трасування OpenTelemetry.
 // ====================================================================================
@@ -69,7 +69,7 @@ builder.Services.AddHttpClient<IDriverApiClient, DriverApiClient>(client =>
     client.BaseAddress = new Uri("https+http://driversmanagement"));
 
 builder.Services.AddHttpClient<ICargoOrderApiClient, CargoOrderApiClient>(client =>
-    client.BaseAddress = new Uri("https+http://cargoorderingservice"));
+    client.BaseAddress = new Uri("https+http://cargoorderingmanager"));
 
 // Блог — НЕКРИТИЧНА залежність (Graceful Degradation). Стандартний бюджет Polly (30 с,
 // спроба по 10 с) змусив би диспетчера чекати пів хвилини, якщо блог "завис". Тому для

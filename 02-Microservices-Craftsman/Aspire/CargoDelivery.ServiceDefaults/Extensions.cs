@@ -5,7 +5,7 @@
 // забезпечує дотримання золотого стандарту розподілених хмарних систем:
 // 1. OpenTelemetry: наскрізне трасування (Tracing), системні метрики (Metrics) та OTLP-логи.
 // 2. Health Checks: стандартизовані зонди готовності (/health) та життєздатності (/alive).
-// 3. Service Discovery: динамічна резолюція логічних імен (наприклад, https+http://cargoorderingservice).
+// 3. Service Discovery: динамічна резолюція логічних імен (наприклад, https+http://cargoorderingmanager).
 // 4. Polly Resilience: стандартний конвеєр із 5 стратегій захисту мережевих викликів HttpClient.
 //
 // Кожен мікросервіс підключає все це ОДНИМ рядком: builder.AddServiceDefaults();

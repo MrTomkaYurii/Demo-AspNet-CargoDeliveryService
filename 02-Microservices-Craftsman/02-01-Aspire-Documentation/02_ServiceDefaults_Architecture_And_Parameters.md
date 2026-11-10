@@ -371,7 +371,7 @@ builder.Services.ConfigureHttpClientDefaults(http =>
 ```
 Забезпечує такі гарантії:
 1. **Глобальність:** Будь-який клієнт, створений через `IHttpClientFactory` — типізований (`AddHttpClient<TClient, TImpl>()`), іменований (`AddHttpClient("name")`) **і навіть gRPC-клієнт** (`AddGrpcClient<T>()`, бо він теж будується фабрикою) — автоматично успадковує ці налаштування.
-2. **Service Discovery:** Дозволяє писати `client.BaseAddress = new Uri("https+http://cargoorderingservice")` без попереднього налаштування DNS.
+2. **Service Discovery:** Дозволяє писати `client.BaseAddress = new Uri("https+http://cargoorderingmanager")` без попереднього налаштування DNS.
 3. **Resilience Handler:** Захищає сокети конвеєром з 5 стратегій (детально розглянуто в модулі [`06`](06_ServiceDiscovery_Resilience_Polly_HttpClient.md)).
 
 ### Правила роботи з глобальними налаштуваннями
@@ -407,7 +407,7 @@ builder.Services.ConfigureHttpClientDefaults(http =>
 | CargoDelivery.HttpAggregator | Напряму: [Program.cs#L30](../CargoDelivery.HttpAggregator/Program.cs#L30) | [Program.cs#L152](../CargoDelivery.HttpAggregator/Program.cs#L152) |
 | DriversManagement | Через обгортку `OpenTelemetryRegistration`: [OpenTelemetryServiceExtension.cs#L20](../DriversManagement/src/DriversManagement/Extensions/Services/OpenTelemetryServiceExtension.cs#L20), яку викликає [WebAppServiceConfiguration.cs#L24](../DriversManagement/src/DriversManagement/Extensions/Services/WebAppServiceConfiguration.cs#L24) | [Program.cs#L57](../DriversManagement/src/DriversManagement/Program.cs#L57) |
 | DriversBlogManagement | [OpenTelemetryServiceExtension.cs#L20](../DriversBlogManagement/src/DriversBlogManagement/Extensions/Services/OpenTelemetryServiceExtension.cs#L20) | [Program.cs#L61](../DriversBlogManagement/src/DriversBlogManagement/Program.cs#L61) |
-| CargoOrderingService | [OpenTelemetryServiceExtension.cs#L20](../CargoOrderingService/src/CargoOrderingService/Extensions/Services/OpenTelemetryServiceExtension.cs#L20) | [Program.cs#L56](../CargoOrderingService/src/CargoOrderingService/Program.cs#L56) |
+| CargoOrderingManager | [OpenTelemetryServiceExtension.cs#L20](../CargoOrderingManager/src/CargoOrderingManager/Extensions/Services/OpenTelemetryServiceExtension.cs#L20) | [Program.cs#L56](../CargoOrderingManager/src/CargoOrderingManager/Program.cs#L56) |
 
 ### Пастка: `UseSerilog()` «з'їдає» OpenTelemetry-логи
 Craftsman-сервіси пишуть логи через Serilog: `builder.Host.UseSerilog()`. Цей виклик **замінює** всі стандартні провайдери логування `Microsoft.Extensions.Logging` — включно з OpenTelemetry-провайдером, який додав `AddServiceDefaults()`. Симптом: у дашборді вкладка **Console logs** показує логи сервісу, а **Structured logs** — порожня (там видно лише агрегатор, який Serilog не використовує).

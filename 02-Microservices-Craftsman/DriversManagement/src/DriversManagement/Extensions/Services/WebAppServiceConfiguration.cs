@@ -71,7 +71,7 @@ public static class WebAppServiceConfiguration
         // 🌐 РЕЄСТРАЦІЯ ТИПІЗОВАНИХ HTTP-КЛІЄНТІВ ДЛЯ GATEWAY AGGREGATOR / BFF
         // ------------------------------------------------------------------------------------
         // Використовуємо IHttpClientFactory, .NET Aspire Service Discovery та Polly Resilience:
-        // 1. "https+http://cargoorderingservice"  - логічне ім'я, резолвиться Aspire Service Discovery
+        // 1. "https+http://cargoorderingmanager"  - логічне ім'я, резолвиться Aspire Service Discovery
         //    ("https+http" = спершу HTTPS-ендпоінт, якщо його немає — HTTP).
         // 2. "https+http://driversblogmanagement" - аналогічно.
         // 3. Стандартний конвеєр Polly (Retry, Circuit Breaker, Timeout) ВЖЕ доданий глобально
@@ -79,7 +79,7 @@ public static class WebAppServiceConfiguration
         //    .AddStandardResilienceHandler() тут вклав би один конвеєр в інший і помножив повтори.
         // ====================================================================================
         builder.Services.AddHttpClient<DriversManagement.Domain.Drivers.Services.Http.ICargoOrderingApiClient, DriversManagement.Domain.Drivers.Services.Http.CargoOrderingApiClient>(client =>
-            client.BaseAddress = new Uri("https+http://cargoorderingservice"));
+            client.BaseAddress = new Uri("https+http://cargoorderingmanager"));
 
         // Блог — НЕКРИТИЧНА залежність дашборду, тож для нього короткий бюджет часу (див. SoftDependencyBudget)
         builder.Services.AddHttpClient<DriversManagement.Domain.Drivers.Services.Http.IDriversBlogApiClient, DriversManagement.Domain.Drivers.Services.Http.DriversBlogApiClient>(client =>
