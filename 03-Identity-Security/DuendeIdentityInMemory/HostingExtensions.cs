@@ -1,4 +1,7 @@
 using Duende.IdentityServer;
+using Duende.IdentityServer.Models;
+using Duende.IdentityServer.Services;
+using Duende.IdentityServer.Validation;
 using DuendeIdentityInMemory;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Serilog;
@@ -28,6 +31,17 @@ namespace DuendeIdentityInMemory
             isBuilder.AddInMemoryApiScopes(Config.ApiScopes);
             isBuilder.AddInMemoryClients(Config.Clients);
             isBuilder.AddInMemoryApiResources(Config.ApiResources);
+
+            if (builder.Environment.IsDevelopment())
+            {
+                // Дозволяємо динамічні localhost-порти, які .NET Aspire призначає Swagger UI сервісів
+                builder.Services.AddSingleton<IRedirectUriValidator, DevLocalhostRedirectUriValidator>();
+                builder.Services.AddSingleton<ICorsPolicyService>(sp =>
+                    new DefaultCorsPolicyService(sp.GetRequiredService<ILogger<DefaultCorsPolicyService>>())
+                    {
+                        AllowAll = true
+                    });
+            }
 
 
             // if you want to use server-side sessions: https://blog.duendesoftware.com/posts/20220406_session_management/
@@ -72,10 +86,33 @@ namespace DuendeIdentityInMemory
             app.UseIdentityServer();
             app.UseAuthorization();
 
+            app.MapDefaultEndpoints();
             app.MapRazorPages()
                 .RequireAuthorization();
 
             return app;
+        }
+    }
+
+    /// <summary>
+    /// Валідатор Redirect URI для середовища розробки Aspire: дозволяє динамічні порти localhost для Swagger OAuth2 PKCE.
+    /// </summary>
+    internal sealed class DevLocalhostRedirectUriValidator : IRedirectUriValidator
+    {
+        public Task<bool> IsRedirectUriValidAsync(string requestedUri, Client client)
+        {
+            if (Uri.TryCreate(requestedUri, UriKind.Absolute, out var uri) && uri.IsLoopback)
+                return Task.FromResult(true);
+
+            return Task.FromResult(client.RedirectUris.Contains(requestedUri));
+        }
+
+        public Task<bool> IsPostLogoutRedirectUriValidAsync(string requestedUri, Client client)
+        {
+            if (Uri.TryCreate(requestedUri, UriKind.Absolute, out var uri) && uri.IsLoopback)
+                return Task.FromResult(true);
+
+            return Task.FromResult(client.PostLogoutRedirectUris.Contains(requestedUri));
         }
     }
 }

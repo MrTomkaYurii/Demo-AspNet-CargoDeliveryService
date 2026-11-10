@@ -9,6 +9,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Aspire.Hosting.PostgreSQL" Version="13.6.1" />
     <PackageReference Include="Aspire.Hosting.RabbitMQ" Version="13.6.1" />
     <PackageReference Include="Aspire.Hosting.SqlServer" Version="13.6.1" />
   </ItemGroup>
@@ -19,6 +20,8 @@
     <ProjectReference Include="..\..\DriversManagement\src\DriversManagement\DriversManagement.csproj" />
     <ProjectReference Include="..\..\CargoDelivery.HttpAggregator\CargoDelivery.HttpAggregator.csproj" />
     <ProjectReference Include="..\..\CargoDelivery.ApiGateway\CargoDelivery.ApiGateway.csproj" />
+    <ProjectReference Include="..\..\..\03-Identity-Security\AuthorizationModuleAPI\AuthorizationModuleAPI.csproj" />
+    <ProjectReference Include="..\..\..\03-Identity-Security\DuendeIdentityInMemory\DuendeIdentityInMemory.csproj" />
   </ItemGroup>
 
 </Project>

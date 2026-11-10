@@ -37,11 +37,21 @@ public class JwtUtils : IJwtUtils
         var key = Encoding.ASCII.GetBytes(_appSettings.Secret);
         var tokenDescriptor = new SecurityTokenDescriptor
         {
-            Subject = new ClaimsIdentity(new[] 
-                { 
-                    new Claim("id", account.Id.ToString()) 
-                }),
-            Expires = DateTime.UtcNow.AddMinutes(15),
+            Subject = new ClaimsIdentity(new[]
+            {
+                new Claim("id", account.Id.ToString()),
+                new Claim(JwtRegisteredClaimNames.Sub, account.Id.ToString()),
+                new Claim(ClaimTypes.NameIdentifier, account.Id.ToString()),
+                new Claim(JwtRegisteredClaimNames.Email, account.Email ?? string.Empty),
+                new Claim(ClaimTypes.Email, account.Email ?? string.Empty),
+                new Claim(JwtRegisteredClaimNames.GivenName, account.FirstName ?? string.Empty),
+                new Claim(ClaimTypes.GivenName, account.FirstName ?? string.Empty),
+                new Claim(JwtRegisteredClaimNames.FamilyName, account.LastName ?? string.Empty),
+                new Claim(ClaimTypes.Surname, account.LastName ?? string.Empty),
+                new Claim("preferred_username", account.Email ?? $"user-{account.Id}"),
+                new Claim(ClaimTypes.Role, account.Role.ToString())
+            }),
+            Expires = DateTime.UtcNow.AddMinutes(60),
             SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature),
             Issuer = _appSettings.Issuer,
             Audience = _appSettings.Audience

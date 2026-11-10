@@ -48,6 +48,52 @@ var sqlserver = builder.AddSqlServer("sqlserver");
 var driversDb = sqlserver.AddDatabase("driversmanagement-db", "dev_driversmanagement");
 var blogDb = sqlserver.AddDatabase("driversblogmanagement-db", "dev_driversblogmanagement");
 var cargoDb = sqlserver.AddDatabase("cargoorderingmanager-db", "dev_cargoorderingmanager");
+var authJwtDb = sqlserver.AddDatabase("auth-jwt-db", "DriversManagementJWT");
+
+// ====================================================================================
+// 🛡️ 2A. ПІДСИСТЕМА БЕЗПЕКИ (03-Identity-Security) — ОДНОЧАСНИЙ ЗАПУСК 3 ПРОВАЙДЕРІВ
+// ------------------------------------------------------------------------------------
+// Всі три модулі автентифікації оркеструються Aspire одночасно:
+//   • 03.1 [auth-simple-api]  — Custom JWT Bearer (AuthorizationModuleAPI + SQL Server)
+//   • 03.2 [auth-duende]      — Duende IdentityServer (OIDC / OAuth 2.0 + PKCE)
+//   • 03.3 [keycloak]         — Enterprise IAM Keycloak у контейнері + PostgreSQL
+//                               (автоімпорт реалму DevRealmDrivers + федерація в Duende)
+// ====================================================================================
+
+// --- 03.3 Інфраструктура Keycloak (PostgreSQL + Контейнер Keycloak) ---
+var keycloakPg = builder.AddPostgres("keycloak-pg")
+    .WithDataVolume("keycloak-pg-data");
+var keycloakDb = keycloakPg.AddDatabase("keycloakdb", "keycloak");
+
+var keycloakImportDir = Path.GetFullPath(
+    Path.Combine(builder.AppHostDirectory, "..", "..", "..", "03-Identity-Security", "Keycloak"));
+
+var keycloak = builder.AddContainer("keycloak", "quay.io/keycloak/keycloak", "26.0")
+    .WithHttpEndpoint(port: 5080, targetPort: 8080, name: "http")
+    .WithBindMount(keycloakImportDir, "/opt/keycloak/data/import", isReadOnly: true)
+    .WithArgs("start-dev", "--import-realm")
+    .WithEnvironment("KC_HTTP_RELATIVE_PATH", "/auth")
+    .WithEnvironment("KEYCLOAK_ADMIN", "admin")
+    .WithEnvironment("KEYCLOAK_ADMIN_PASSWORD", "admin")
+    .WithEnvironment("KC_DB", "postgres")
+    .WithEnvironment("KC_DB_URL", "jdbc:postgresql://keycloak-pg:5432/keycloak")
+    .WithEnvironment("KC_DB_USERNAME", keycloakPg.Resource.UserNameReference)
+    .WithEnvironment("KC_DB_PASSWORD", keycloakPg.Resource.PasswordParameter)
+    .WaitFor(keycloakDb);
+
+var keycloakRealmAuthority = ReferenceExpression.Create($"{keycloak.GetEndpoint("http")}/auth/realms/DevRealmDrivers");
+
+// --- 03.1 Простий Custom JWT API (AuthorizationModuleAPI) ---
+var simpleAuthApi = builder.AddProject<Projects.AuthorizationModuleAPI>("auth-simple-api")
+    .WithReference(authJwtDb, connectionName: "WebApiJWTDatabase")
+    .WithHttpHealthCheck("/health")
+    .WaitFor(authJwtDb);
+
+// --- 03.2 Duende IdentityServer (+ федерація з Keycloak 03.3) ---
+var duendeAuth = builder.AddProject<Projects.DuendeIdentityInMemory>("auth-duende")
+    .WithEnvironment("Keycloak__Authority", keycloakRealmAuthority)
+    .WithHttpHealthCheck("/health")
+    .WaitFor(keycloak);
 
 // ====================================================================================
 // 📦 3. МІКРОСЕРВІС ЗАМОВЛЕНЬ ТА ДОСТАВОК: CargoOrderingManager
@@ -61,6 +107,12 @@ var cargoApi = builder.AddProject<Projects.CargoOrderingManager>("cargoorderingm
     // connectionName → змінна ConnectionStrings__CargoOrderingManager, яку читає ConnectionStringOptions сервісу
     .WithReference(cargoDb, connectionName: "CargoOrderingManager")
     .WithReference(rabbitmq)
+    .WithEnvironment("Auth__Mode", "Multi")
+    .WithEnvironment("Auth__SimpleJwt__Secret", "TOPSECRETKEYFORDRIVERMANAGEMENTSYSTEM")
+    .WithEnvironment("Auth__SimpleJwt__Issuer", "AuthorizationModuleAPI")
+    .WithEnvironment("Auth__SimpleJwt__Audience", "cargodelivery.microservices")
+    .WithEnvironment("Auth__Duende__Authority", duendeAuth.GetEndpoint("https"))
+    .WithEnvironment("Auth__Keycloak__Authority", keycloakRealmAuthority)
     // Health probe для Aspire: ресурс вважається "Healthy" лише коли GET /health повертає 200.
     // Саме на цей стан чекають залежні ресурси у .WaitFor(cargoApi).
     .WithHttpHealthCheck("/health")
@@ -78,6 +130,12 @@ var cargoApi = builder.AddProject<Projects.CargoOrderingManager>("cargoorderingm
 var blogApi = builder.AddProject<Projects.DriversBlogManagement>("driversblogmanagement")
     .WithReference(blogDb, connectionName: "DriversBlogManagement")
     .WithReference(rabbitmq)
+    .WithEnvironment("Auth__Mode", "Multi")
+    .WithEnvironment("Auth__SimpleJwt__Secret", "TOPSECRETKEYFORDRIVERMANAGEMENTSYSTEM")
+    .WithEnvironment("Auth__SimpleJwt__Issuer", "AuthorizationModuleAPI")
+    .WithEnvironment("Auth__SimpleJwt__Audience", "cargodelivery.microservices")
+    .WithEnvironment("Auth__Duende__Authority", duendeAuth.GetEndpoint("https"))
+    .WithEnvironment("Auth__Keycloak__Authority", keycloakRealmAuthority)
     .WithHttpHealthCheck("/health")
     .WaitFor(blogDb)
     .WaitFor(rabbitmq);
@@ -98,6 +156,12 @@ var driversApi = builder.AddProject<Projects.DriversManagement>("driversmanageme
     .WithReference(rabbitmq)
     .WithReference(blogApi)
     .WithReference(cargoApi)
+    .WithEnvironment("Auth__Mode", "Multi")
+    .WithEnvironment("Auth__SimpleJwt__Secret", "TOPSECRETKEYFORDRIVERMANAGEMENTSYSTEM")
+    .WithEnvironment("Auth__SimpleJwt__Issuer", "AuthorizationModuleAPI")
+    .WithEnvironment("Auth__SimpleJwt__Audience", "cargodelivery.microservices")
+    .WithEnvironment("Auth__Duende__Authority", duendeAuth.GetEndpoint("https"))
+    .WithEnvironment("Auth__Keycloak__Authority", keycloakRealmAuthority)
     .WithHttpHealthCheck("/health")
     .WaitFor(driversDb)
     .WaitFor(rabbitmq);

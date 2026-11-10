@@ -8,6 +8,9 @@ using System.Text.Json.Serialization;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Підключення .NET Aspire ServiceDefaults (OpenTelemetry, HealthChecks /health & /alive, Service Discovery)
+builder.AddServiceDefaults();
+
 // add services to DI container
 {
     var services = builder.Services;
@@ -93,5 +96,6 @@ using (var scope = app.Services.CreateScope())
     app.UseMiddleware<JwtMiddleware>();
 
     app.MapControllers();
+    app.MapDefaultEndpoints();
 }
 app.Run();

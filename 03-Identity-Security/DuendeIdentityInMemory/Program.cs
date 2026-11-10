@@ -11,6 +11,9 @@ try
 {
     var builder = WebApplication.CreateBuilder(args);
 
+    // Підключення .NET Aspire ServiceDefaults (OpenTelemetry, HealthChecks /health & /alive, Service Discovery)
+    builder.AddServiceDefaults();
+
     builder.Host.UseSerilog((ctx, lc) => lc
         .WriteTo.Console(outputTemplate: "[{Timestamp:HH:mm:ss} {Level}] {SourceContext}{NewLine}{Message:lj}{NewLine}{Exception}{NewLine}")
         .Enrich.FromLogContext()
