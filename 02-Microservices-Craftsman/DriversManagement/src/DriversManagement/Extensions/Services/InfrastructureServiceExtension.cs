@@ -1,5 +1,6 @@
 namespace DriversManagement.Extensions.Services;
 
+using CargoDelivery.ServiceDefaults.Auth;
 using DriversManagement.Databases;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using HeimGuard;
@@ -35,30 +36,15 @@ public static class ServiceRegistration
         services.SetupHangfire(env);
 
         // ====================================================================================
-        // 🔓 [AUTH-DISABLED] АВТЕНТИФІКАЦІЮ ВИМКНЕНО ДЛЯ НАВЧАЛЬНОГО СТЕНДУ ASPIRE
+        // 🔐 ПІДКЛЮЧЕННЯ БАГАТОСХЕМНОЇ АВТЕНТИФІКАЦІЇ (03.1 SimpleJwt / 03.2 Duende / 03.3 Keycloak)
         // ------------------------------------------------------------------------------------
-        // Оригінальний Craftsman-шаблон вимагає JWT від Keycloak (http://localhost:5000), який
-        // у цьому навчальному стенді не запускається. Тому закоментовано:
-        //   - реєстрацію JwtBearer (нижче);
-        //   - app.UseAuthentication() у Program.cs;
-        //   - атрибути [Authorize] у контролерах;
-        //   - перевірки дозволів HeimGuard (_heimGuard.MustHavePermission) в обробниках.
-        // Усі такі рядки позначені маркером "[AUTH-DISABLED]": щоб повернути авторизацію,
-        // знайдіть маркер у рішенні та розкоментуйте рядки.
-        // AddAuthorization та AddHeimGuard ЗАЛИШЕНО, бо IHeimGuardClient інжектується в обробники.
+        // Замість одного жорстко зашитого провайдера підключаємо фасад AddCargoMultiAuth(...),
+        // який маршрутизує перевірку токена за полем `iss` через SmartAuthPolicy.
         // ====================================================================================
-        // [AUTH-DISABLED] // Auth -- Do Not Delete
-        // [AUTH-DISABLED] var authOptions = configuration.GetAuthOptions();
-        // [AUTH-DISABLED] if (!env.IsEnvironment(Consts.Testing.FunctionalTestingEnvName))
-        // [AUTH-DISABLED] {
-        // [AUTH-DISABLED] services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-        // [AUTH-DISABLED] .AddJwtBearer(options =>
-        // [AUTH-DISABLED] {
-        // [AUTH-DISABLED] options.Authority = authOptions.Authority;
-        // [AUTH-DISABLED] options.Audience = authOptions.Audience;
-        // [AUTH-DISABLED] options.RequireHttpsMetadata = !env.IsDevelopment();
-        // [AUTH-DISABLED] });
-        // [AUTH-DISABLED] }
+        if (!env.IsEnvironment(Consts.Testing.FunctionalTestingEnvName))
+        {
+            services.AddCargoMultiAuth(configuration, env);
+        }
 
         services.AddAuthorization(options =>
         {

@@ -12,6 +12,7 @@
 
 using CargoDelivery.HttpAggregator.Domain.Clients;
 using CargoDelivery.HttpAggregator.Domain.Services;
+using CargoDelivery.ServiceDefaults.Auth;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -65,11 +66,16 @@ builder.Services.AddSwaggerGen(options =>
 // середовища services__driversmanagement__https__0, яку AppHost інжектує через
 // .WithReference(driversApi).
 // ====================================================================================
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddTransient<AuthorizationForwardingHandler>();
+
 builder.Services.AddHttpClient<IDriverApiClient, DriverApiClient>(client =>
-    client.BaseAddress = new Uri("https+http://driversmanagement"));
+    client.BaseAddress = new Uri("https+http://driversmanagement"))
+    .AddHttpMessageHandler<AuthorizationForwardingHandler>();
 
 builder.Services.AddHttpClient<ICargoOrderApiClient, CargoOrderApiClient>(client =>
-    client.BaseAddress = new Uri("https+http://cargoorderingmanager"));
+    client.BaseAddress = new Uri("https+http://cargoorderingmanager"))
+    .AddHttpMessageHandler<AuthorizationForwardingHandler>();
 
 // Блог — НЕКРИТИЧНА залежність (Graceful Degradation). Стандартний бюджет Polly (30 с,
 // спроба по 10 с) змусив би диспетчера чекати пів хвилини, якщо блог "завис". Тому для
@@ -77,6 +83,7 @@ builder.Services.AddHttpClient<ICargoOrderApiClient, CargoOrderApiClient>(client
 // Після цього SafeFetchRoadNotesAsync повертає порожній список і IsDegraded = true.
 builder.Services.AddHttpClient<IDriverBlogApiClient, DriverBlogApiClient>(client =>
         client.BaseAddress = new Uri("https+http://driversblogmanagement"))
+    .AddHttpMessageHandler<AuthorizationForwardingHandler>()
     .RemoveAllResilienceHandlers()
     .AddStandardResilienceHandler(options =>
     {

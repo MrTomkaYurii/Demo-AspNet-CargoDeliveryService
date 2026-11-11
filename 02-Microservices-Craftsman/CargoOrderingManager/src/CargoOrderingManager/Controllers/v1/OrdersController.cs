@@ -28,7 +28,7 @@ public sealed class OrdersController: ControllerBase
     /// <summary>
     /// Gets a list of all Orders.
     /// </summary>
-    // [AUTH-DISABLED] [Authorize]
+    [Authorize]
     [HttpGet(Name = "GetOrders")]
     public async Task<IActionResult> GetOrders([FromQuery] OrderParametersDto orderParametersDto)
     {

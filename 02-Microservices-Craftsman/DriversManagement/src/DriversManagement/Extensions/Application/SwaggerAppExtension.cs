@@ -1,5 +1,6 @@
 namespace DriversManagement.Extensions.Application;
 
+using CargoDelivery.ServiceDefaults.Auth;
 using DriversManagement.Middleware;
 using DriversManagement.Services;
 using Configurations;
@@ -17,12 +18,9 @@ public static class SwaggerAppExtension
             app.UseSwagger();
             app.UseSwaggerUI(config =>
             {
-                config.SwaggerEndpoint("/swagger/v1/swagger.json", "");
+                config.SwaggerEndpoint("/swagger/v1/swagger.json", "DriversManagement v1");
                 config.DocExpansion(DocExpansion.None);
-            var authOptions = configuration.GetAuthOptions();
-            config.OAuthClientId(authOptions.ClientId);
-            config.OAuthClientSecret(authOptions.ClientSecret);
-            config.OAuthUsePkce();
+                config.UseCargoSwaggerMultiAuth(configuration);
             });
         }
     }

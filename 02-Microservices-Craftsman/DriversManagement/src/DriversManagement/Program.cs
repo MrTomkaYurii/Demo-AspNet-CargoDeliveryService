@@ -58,9 +58,7 @@ var app = builder.Build();
     app.UseSerilogRequestLogging();
     app.UseRouting();
 
-    // [AUTH-DISABLED] Автентифікацію (JWT/Keycloak) вимкнено для навчального стенду — див. InfrastructureServiceExtension.
-    // [AUTH-DISABLED] app.UseAuthentication();
-    // UseAuthorization залишено: без атрибутів [Authorize] нічого не блокує, але знадобиться, якщо авторизацію повернуть.
+    app.UseAuthentication();
     app.UseAuthorization();
 
     app.MapControllers();

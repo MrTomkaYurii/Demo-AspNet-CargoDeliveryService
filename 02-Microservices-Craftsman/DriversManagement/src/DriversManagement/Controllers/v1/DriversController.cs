@@ -28,7 +28,7 @@ public sealed class DriversController: ControllerBase
     /// <summary>
     /// Gets a list of all Drivers.
     /// </summary>
-    // [AUTH-DISABLED] [Authorize]
+    [Authorize]
     [HttpGet(Name = "GetDrivers")]
     public async Task<IActionResult> GetDrivers([FromQuery] DriverParametersDto driverParametersDto)
     {

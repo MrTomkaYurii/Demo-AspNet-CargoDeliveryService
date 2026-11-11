@@ -23,6 +23,7 @@
 // ====================================================================================
 
 using CargoDelivery.ApiGateway.Aggregators;
+using CargoDelivery.ServiceDefaults.Auth;
 using Ocelot.DependencyInjection;
 using Ocelot.Middleware;
 
@@ -58,6 +59,8 @@ builder.Services.AddSwaggerGen(options =>
         Description = "Єдиний вхідний API-шлюз на базі Ocelot: Reverse Proxy маршрутизація (/gateway/*) " +
                       "та вбудована агрегація запитів (/gateway/ocelot-aggregate/{driverId} і /gateway/custom-aggregate/{driverId})."
     });
+
+    options.AddCargoSwaggerMultiAuth(builder.Configuration);
 
     var xmlFile = Path.Combine(AppContext.BaseDirectory, $"{typeof(Program).Assembly.GetName().Name}.xml");
     if (File.Exists(xmlFile))

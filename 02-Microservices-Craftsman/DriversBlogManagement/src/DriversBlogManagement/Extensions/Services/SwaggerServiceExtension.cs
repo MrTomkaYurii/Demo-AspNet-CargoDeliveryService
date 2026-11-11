@@ -1,5 +1,6 @@
 namespace DriversBlogManagement.Extensions.Services;
 
+using CargoDelivery.ServiceDefaults.Auth;
 using DriversBlogManagement.Services;
 using Configurations;
 using FluentValidation.AspNetCore;
@@ -41,40 +42,7 @@ public static class SwaggerServiceExtension
                     },
                 });
 
-            config.AddSecurityDefinition("oauth2", new OpenApiSecurityScheme
-            {
-                Type = SecuritySchemeType.OAuth2,
-                Flows = new OpenApiOAuthFlows
-                {
-                    AuthorizationCode = new OpenApiOAuthFlow
-                    {
-                        AuthorizationUrl = new Uri(authOptions.AuthorizationUrl),
-                        TokenUrl = new Uri(authOptions.TokenUrl),
-                        Scopes = new Dictionary<string, string>
-                        {
-                            {"blog_management", "Blog Management Access"}
-                        }
-                    }
-                }
-            });
-
-            config.AddSecurityRequirement(new OpenApiSecurityRequirement()
-            {
-                {
-                    new OpenApiSecurityScheme
-                    {
-                        Reference = new OpenApiReference
-                        {
-                            Type = ReferenceType.SecurityScheme,
-                            Id = "oauth2"
-                        },
-                        Scheme = "oauth2",
-                        Name = "oauth2",
-                        In = ParameterLocation.Header
-                    },
-                    new List<string>()
-                }
-            }); 
+            config.AddCargoSwaggerMultiAuth(configuration);
 
             config.IncludeXmlComments(string.Format(@$"{AppDomain.CurrentDomain.BaseDirectory}{Path.DirectorySeparatorChar}DriversBlogManagement.WebApi.xml"));
         });
