@@ -57,18 +57,18 @@ namespace DuendeIdentityInMemory
             //    options.Conventions.AuthorizeFolder("/ServerSideSessions", "admin"));
 
 
-            var keycloakAuthority = builder.Configuration["Keycloak:Authority"]
-                                    ?? "http://localhost:5080/auth/realms/DevRealmDrivers";
+            var keycloakAuthority = builder.Configuration["Keycloak:Authority"];
+            var authBuilder = builder.Services.AddAuthentication();
 
-            builder.Services.AddAuthentication()
+            if (!string.IsNullOrWhiteSpace(keycloakAuthority))
+            {
                 // ================================================================================
-                // 🤝 03.3 ФЕДЕРАЦІЯ KEYCLOAK + DUENDE (External OIDC Identity Provider)
+                // 🤝 03.3 ФЕДЕРАЦІЯ KEYCLOAK + DUENDE (External OIDC Identity Provider, опціонально)
                 // --------------------------------------------------------------------------------
-                // На екрані входу Duende з'являється кнопка "Keycloak (Corporate SSO)".
-                // При натисканні Duende перенаправляє користувача в Keycloak (Realm DevRealmDrivers),
-                // приймає OIDC-токен, формує локальну сесію та видає клієнту власний at+jwt токен.
+                // Реєструється лише коли задано Keycloak:Authority (наприклад, з Aspire AppHost).
+                // При автономному запуску Duende (03.2) цей блок не активується.
                 // ================================================================================
-                .AddOpenIdConnect("keycloak", "Keycloak (Corporate SSO)", options =>
+                authBuilder.AddOpenIdConnect("keycloak", "Keycloak (Corporate SSO)", options =>
                 {
                     options.SignInScheme = IdentityServerConstants.ExternalCookieAuthenticationScheme;
                     options.SignOutScheme = IdentityServerConstants.SignoutScheme;
@@ -86,6 +86,7 @@ namespace DuendeIdentityInMemory
                     options.Scope.Add("email");
                     options.GetClaimsFromUserInfoEndpoint = true;
                 });
+            }
 
             return builder.Build();
         }

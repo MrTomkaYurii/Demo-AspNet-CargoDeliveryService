@@ -89,11 +89,10 @@ var simpleAuthApi = builder.AddProject<Projects.AuthorizationModuleAPI>("auth-si
     .WithHttpHealthCheck("/health")
     .WaitFor(authJwtDb);
 
-// --- 03.2 Duende IdentityServer (+ федерація з Keycloak 03.3) ---
+// --- 03.2 Duende IdentityServer (автономний, опціональна федерація 03.3 через Keycloak__Authority) ---
 var duendeAuth = builder.AddProject<Projects.DuendeIdentityInMemory>("auth-duende")
     .WithEnvironment("Keycloak__Authority", keycloakRealmAuthority)
-    .WithHttpHealthCheck("/health")
-    .WaitFor(keycloak);
+    .WithHttpHealthCheck("/health");
 
 // ====================================================================================
 // 📦 3. МІКРОСЕРВІС ЗАМОВЛЕНЬ ТА ДОСТАВОК: OrderingManagement
