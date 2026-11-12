@@ -66,7 +66,7 @@ var keycloakPg = builder.AddPostgres("keycloak-pg")
 var keycloakDb = keycloakPg.AddDatabase("keycloakdb", "keycloak");
 
 var keycloakImportDir = Path.GetFullPath(
-    Path.Combine(builder.AppHostDirectory, "..", "..", "..", "03-Identity-Security", "Keycloak"));
+    Path.Combine(builder.AppHostDirectory, "..", "..", "Keycloak"));
 
 var keycloak = builder.AddContainer("keycloak", "quay.io/keycloak/keycloak", "26.0")
     .WithHttpEndpoint(port: 5080, targetPort: 8080, name: "http")

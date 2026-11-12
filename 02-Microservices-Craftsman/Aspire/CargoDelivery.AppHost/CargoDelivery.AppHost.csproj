@@ -20,8 +20,8 @@
     <ProjectReference Include="..\..\DriversManagement\src\DriversManagement\DriversManagement.csproj" />
     <ProjectReference Include="..\..\CargoDelivery.HttpAggregator\CargoDelivery.HttpAggregator.csproj" />
     <ProjectReference Include="..\..\CargoDelivery.ApiGateway\CargoDelivery.ApiGateway.csproj" />
-    <ProjectReference Include="..\..\..\03-Identity-Security\AuthorizationModuleAPI\AuthorizationModuleAPI.csproj" />
-    <ProjectReference Include="..\..\..\03-Identity-Security\DuendeIdentityInMemory\DuendeIdentityInMemory.csproj" />
+    <ProjectReference Include="..\..\AuthorizationModuleAPI\AuthorizationModuleAPI.csproj" />
+    <ProjectReference Include="..\..\DuendeIdentityInMemory\DuendeIdentityInMemory.csproj" />
   </ItemGroup>
 
 </Project>

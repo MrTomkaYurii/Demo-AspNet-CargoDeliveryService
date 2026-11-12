@@ -19,7 +19,7 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<ProjectReference Include="..\..\02-Microservices-Craftsman\Aspire\CargoDelivery.ServiceDefaults\CargoDelivery.ServiceDefaults.csproj" />
+		<ProjectReference Include="..\Aspire\CargoDelivery.ServiceDefaults\CargoDelivery.ServiceDefaults.csproj" />
 	</ItemGroup>
 
 </Project>
