@@ -1,0 +1,50 @@
+# ====================================================================================
+# 🔑 СЦЕНАРІЙ 03.1: ПРОСТИЙ CUSTOM JWT (AuthorizationModuleAPI -> DriversManagement)
+# ------------------------------------------------------------------------------------
+# Демонструє класичну модель без зовнішнього OIDC-провайдера:
+#   1. Користувач реєструється / логіниться у AuthorizationModuleAPI.
+#   2. Отримує симетричний JWT-токен (HMAC-SHA256) із iss = "AuthorizationModuleAPI".
+#   3. Використовує токен для доступу до DriversManagement, CargoOrderingManager та ApiGateway.
+#   4. SmartAuthPolicy автоматично розпізнає iss == "AuthorizationModuleAPI" -> SimpleJwtScheme.
+# ====================================================================================
+
+@SimpleAuthHost = https://localhost:5001
+@DriversApiHost = https://localhost:5002
+@ApiGatewayHost = https://localhost:5000
+
+### КРОК 1: Реєстрація нового користувача в AuthorizationModuleAPI (якщо БД порожня)
+POST {{SimpleAuthHost}}/accounts/register
+Content-Type: application/json
+
+{
+  "title": "Mr",
+  "firstName": "Demo",
+  "lastName": "Dispatcher",
+  "email": "dispatcher@cargodelivery.local",
+  "password": "Password123!",
+  "confirmPassword": "Password123!",
+  "acceptTerms": true
+}
+
+### КРОК 2: Вхід та отримання JWT-токена (скопіюйте jwtToken у змінну @jwtToken)
+POST {{SimpleAuthHost}}/accounts/authenticate
+Content-Type: application/json
+
+{
+  "email": "dispatcher@cargodelivery.local",
+  "password": "Password123!"
+}
+
+###
+@jwtToken = PASTE_YOUR_JWT_TOKEN_HERE
+
+### КРОК 3: Запит без токена (очікується 401 Unauthorized)
+GET {{DriversApiHost}}/api/drivers
+
+### КРОК 4: Запит із токеном 03.1 до DriversManagement (очікується 200 OK + авто-сідінг SuperAdmin)
+GET {{DriversApiHost}}/api/drivers
+Authorization: Bearer {{jwtToken}}
+
+### КРОК 5: Наскрізний запит через ApiGateway -> HttpAggregator -> DriversManagement + CargoOrderingManager
+GET {{ApiGatewayHost}}/gateway/custom-aggregate/1
+Authorization: Bearer {{jwtToken}}

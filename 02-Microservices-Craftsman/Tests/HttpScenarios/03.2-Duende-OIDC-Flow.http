@@ -1,0 +1,32 @@
+# ====================================================================================
+# 🏛️ СЦЕНАРІЙ 03.2: DUENDE IDENTITYSERVER (OAuth 2.0 / OIDC + Client Credentials / PKCE)
+# ------------------------------------------------------------------------------------
+# Демонструє виділений Security Token Service (STS) на базі Duende IdentityServer:
+#   1. Клієнт отримує асиметричний at+jwt токен (RS256) через OIDC Discovery.
+#   2. SmartAuthPolicy бачить iss від Duende -> направляє в DuendeScheme.
+#   3. Один токен відкриває доступ до DriversManagement, CargoOrderingManager і HttpAggregator.
+# ====================================================================================
+
+@DuendeHost = https://localhost:5001
+@DriversApiHost = https://localhost:5002
+@OrdersApiHost = https://localhost:5003
+
+### КРОК 1: Перевірка OIDC Discovery документа Duende
+GET {{DuendeHost}}/.well-known/openid-configuration
+
+### КРОК 2: Отримання M2M-токена (Client Credentials Flow) для скоупів Craftsman
+POST {{DuendeHost}}/connect/token
+Content-Type: application/x-www-form-urlencoded
+
+grant_type=client_credentials&client_id=m2m.client&client_secret=511536EF-F270-4058-80CA-1C89C192F69A&scope=drivers_management cargo_ordering blog_management
+
+###
+@duendeToken = PASTE_DUENDE_ACCESS_TOKEN_HERE
+
+### КРОК 3: Виклик DriversManagement із токеном 03.2
+GET {{DriversApiHost}}/api/drivers
+Authorization: Bearer {{duendeToken}}
+
+### КРОК 4: Виклик CargoOrderingManager із тим самим токеном 03.2
+GET {{OrdersApiHost}}/api/orders
+Authorization: Bearer {{duendeToken}}

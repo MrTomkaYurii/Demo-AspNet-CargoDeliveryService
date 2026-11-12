@@ -1,0 +1,34 @@
+# ====================================================================================
+# 🏢 СЦЕНАРІЙ 03.3: KEYCLOAK IAM + ФЕДЕРАЦІЯ З DUENDE (Enterprise SSO)
+# ------------------------------------------------------------------------------------
+# Демонструє два варіанти роботи Keycloak (Realm DevRealmDrivers):
+#   A) Пряма автентифікація: токен виписано Keycloak (/auth/realms/DevRealmDrivers)
+#      -> SmartAuthPolicy розпізнає "/realms/" -> направляє в KeycloakScheme.
+#   B) Федерація через Duende (рекомендовано для UI/Swagger):
+#      У Swagger вибираємо 03.2-Duende-OAuth2 -> на екрані Duende натискаємо
+#      "Keycloak (Corporate SSO)" -> логінимось як alice / alice -> Duende видає токен.
+# ====================================================================================
+
+@KeycloakHost = http://localhost:5080
+@DriversApiHost = https://localhost:5002
+@ApiGatewayHost = https://localhost:5000
+
+### КРОК 1: Перевірка OIDC Discovery реалму DevRealmDrivers у Keycloak
+GET {{KeycloakHost}}/auth/realms/DevRealmDrivers/.well-known/openid-configuration
+
+### КРОК 2: Отримання токена напряму від Keycloak (Direct Access Grant для демо alice/alice)
+POST {{KeycloakHost}}/auth/realms/DevRealmDrivers/protocol/openid-connect/token
+Content-Type: application/x-www-form-urlencoded
+
+grant_type=password&client_id=drivers_management.swagger&username=alice&password=alice&scope=openid profile email drivers_management cargo_ordering
+
+###
+@keycloakToken = PASTE_KEYCLOAK_ACCESS_TOKEN_HERE
+
+### КРОК 3: Запит до DriversManagement з прямим токеном Keycloak (03.3)
+GET {{DriversApiHost}}/api/drivers
+Authorization: Bearer {{keycloakToken}}
+
+### КРОК 4: Наскрізний запит через ApiGateway із токеном Keycloak (03.3)
+GET {{ApiGatewayHost}}/gateway/drivers
+Authorization: Bearer {{keycloakToken}}
