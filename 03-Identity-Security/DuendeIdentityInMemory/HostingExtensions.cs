@@ -57,16 +57,34 @@ namespace DuendeIdentityInMemory
             //    options.Conventions.AuthorizeFolder("/ServerSideSessions", "admin"));
 
 
+            var keycloakAuthority = builder.Configuration["Keycloak:Authority"]
+                                    ?? "http://localhost:5080/auth/realms/DevRealmDrivers";
+
             builder.Services.AddAuthentication()
-                .AddGoogle(options =>
+                // ================================================================================
+                // 🤝 03.3 ФЕДЕРАЦІЯ KEYCLOAK + DUENDE (External OIDC Identity Provider)
+                // --------------------------------------------------------------------------------
+                // На екрані входу Duende з'являється кнопка "Keycloak (Corporate SSO)".
+                // При натисканні Duende перенаправляє користувача в Keycloak (Realm DevRealmDrivers),
+                // приймає OIDC-токен, формує локальну сесію та видає клієнту власний at+jwt токен.
+                // ================================================================================
+                .AddOpenIdConnect("keycloak", "Keycloak (Corporate SSO)", options =>
                 {
                     options.SignInScheme = IdentityServerConstants.ExternalCookieAuthenticationScheme;
+                    options.SignOutScheme = IdentityServerConstants.SignoutScheme;
+                    options.SaveTokens = true;
 
-                    // register your IdentityServer with Google at https://console.developers.google.com
-                    // enable the Google+ API
-                    // set the redirect URI to https://localhost:5001/signin-google
-                    options.ClientId = "copy client ID from Google here";
-                    options.ClientSecret = "copy client secret from Google here";
+                    options.Authority = keycloakAuthority;
+                    options.ClientId = "duende.federation";
+                    options.ClientSecret = "duende-keycloak-secret";
+                    options.ResponseType = "code";
+                    options.RequireHttpsMetadata = !builder.Environment.IsDevelopment();
+
+                    options.Scope.Clear();
+                    options.Scope.Add("openid");
+                    options.Scope.Add("profile");
+                    options.Scope.Add("email");
+                    options.GetClaimsFromUserInfoEndpoint = true;
                 });
 
             return builder.Build();

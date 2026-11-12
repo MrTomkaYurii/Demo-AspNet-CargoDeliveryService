@@ -20,6 +20,17 @@ class RealmBuild : Stack
         });
         var driversmanagementScope = ScopeFactory.CreateScope(realm.Id, "drivers_management");
         var blogmanagementScope = ScopeFactory.CreateScope(realm.Id, "blog_management");
+        var cargoOrderingScope = ScopeFactory.CreateScope(realm.Id, "cargo_ordering");
+
+        // Клієнт для OIDC-федерації з Duende IdentityServer (Модуль 03.3)
+        var duendeFederationClient = ClientFactory.CreateCodeFlowClient(realm.Id,
+            "duende.federation",
+            "duende-keycloak-secret",
+            "Duende IdentityServer OIDC Federation",
+            "https://localhost:5001",
+            redirectUris: new InputList<string> { "https://localhost:5001/signin-oidc", "http://localhost:*/signin-oidc", "https://localhost:*/signin-oidc" },
+            webOrigins: new InputList<string> { "+" });
+        duendeFederationClient.ExtendDefaultScopes(driversmanagementScope.Name, cargoOrderingScope.Name, blogmanagementScope.Name);
         
         var driversManagementPostmanMachineClient = ClientFactory.CreateClientCredentialsFlowClient(realm.Id,
             "drivers_management.postman.machine", 
