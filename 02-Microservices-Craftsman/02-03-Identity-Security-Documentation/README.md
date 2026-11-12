@@ -16,7 +16,7 @@
 
 ## 🏗️ Єдина архітектура під керуванням `CargoDelivery.AppHost`
 
-Усі три провайдери запускаються **одночасно** у [`AppHost.cs`](../Aspire/CargoDelivery.AppHost/AppHost.cs), а мікросервіси (`DriversManagement`, `CargoOrderingManager`, `DriversBlogManagement`) приймають токени від будь-якого з них через [`SmartAuthPolicyExtensions.cs`](../Aspire/CargoDelivery.ServiceDefaults/Auth/SmartAuthPolicyExtensions.cs):
+Усі три провайдери запускаються **одночасно** у [`AppHost.cs`](../Aspire/CargoDelivery.AppHost/AppHost.cs), а мікросервіси (`DriversManagement`, `OrderingManagement`, `BlogManagement`) приймають токени від будь-якого з них через [`SmartAuthPolicyExtensions.cs`](../Aspire/CargoDelivery.ServiceDefaults/Auth/SmartAuthPolicyExtensions.cs):
 
 ```mermaid
 flowchart TB
@@ -37,8 +37,8 @@ flowchart TB
 
     subgraph Services ["⚡ Craftsman Microservices"]
         DM["DriversManagement<br/>(SmartPolicy + HeimGuard)"]
-        CO["CargoOrderingManager<br/>(SmartPolicy + HeimGuard)"]
-        DB["DriversBlogManagement<br/>(SmartPolicy + gRPC)"]
+        CO["OrderingManagement<br/>(SmartPolicy + HeimGuard)"]
+        DB["BlogManagement<br/>(SmartPolicy + gRPC)"]
         AGG --> DM
         AGG --> CO
         AGG --> DB

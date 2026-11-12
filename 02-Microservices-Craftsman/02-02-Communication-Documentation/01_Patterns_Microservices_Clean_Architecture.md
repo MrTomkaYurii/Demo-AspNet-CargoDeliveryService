@@ -65,7 +65,7 @@ flowchart TD
         DM_Domain --> DM_DB
     end
 
-    subgraph CO_Context["📦 CargoOrderingManager Bounded Context"]
+    subgraph CO_Context["📦 OrderingManagement Bounded Context"]
         CO_API["CargoOrdering Web API"]
         CO_MediatR["MediatR CQRS Pipeline"]
         CO_Domain["Logistics Model: Order + Delivery + Shadow Driver"]
@@ -76,7 +76,7 @@ flowchart TD
         CO_Domain --> CO_DB
     end
 
-    subgraph DB_Context["📝 DriversBlogManagement Bounded Context"]
+    subgraph DB_Context["📝 BlogManagement Bounded Context"]
         DB_API["DriversBlog Web API & gRPC Server"]
         DB_MediatR["MediatR CQRS Pipeline"]
         DB_Domain["Social Model: Post + Like + Shadow Driver"]
@@ -117,8 +117,8 @@ flowchart LR
 * **Моноліт (Блок 1)** схожий на один спільний open-space офіс із загальним паперовим архівом. Будь-який співробітник будь-якого відділу може підійти до однієї шафи з папками. Якщо шафа загориться або хтось випадково пошкодить журнал — зупиняється вся компанія.
 * **Мікросервіси (Блок 2)** схожі на окремі спеціалізовані підрозділи:
   1. **Відділ кадрів (`DriversManagement`)**: веде повне досьє працівника (паспорт, категорія посвідчення, медогляд, нарахування витрат, закріплена вантажівка).
-  2. **Диспетчерський центр замовлень (`CargoOrderingManager`)**: оформлює товарно-транспортні накладні, рейси та доставку. Диспетчеру не потрібні дані про сімейний стан водія чи його витрати на ремонт авто — йому потрібні лише `Id`, ПІБ, телефон і номер посвідчення.
-  3. **Корпоративний блог (`DriversBlogManagement`)**: публікує статті, новини доріг та збирає лайки від колег.
+  2. **Диспетчерський центр замовлень (`OrderingManagement`)**: оформлює товарно-транспортні накладні, рейси та доставку. Диспетчеру не потрібні дані про сімейний стан водія чи його витрати на ремонт авто — йому потрібні лише `Id`, ПІБ, телефон і номер посвідчення.
+  3. **Корпоративний блог (`BlogManagement`)**: публікує статті, новини доріг та збирає лайки від колег.
   
 Кожен відділ має **свій власний закритий сейф (Database-per-Service)**. Жоден співробітник не має прямого ключа від сейфа іншого відділу — взаємодія відбувається виключно через офіційні телефонні запити (**gRPC / HTTP**) або інформаційні бюлетені (**RabbitMQ**).
 
@@ -129,23 +129,23 @@ flowchart LR
 
 Найчастіша помилка архітекторів-початківців — спроба винести єдину загальну таблицю `Drivers` в окрему бібліотеку і шерити її між усіма мікросервісами. Це призводить до найгіршого антипатерну — **Розподіленого моноліту (Distributed Monolith)**.
 
-> 🐞 **Реальний приклад із цього проєкту.** DriversManagement колись мав `ProjectReference` на весь проєкт DriversBlogManagement (заради gRPC-типів і DTO постів). Наслідок: у процес DriversManagement завантажувались **контролери блогу**, і маршрут `/api/drivers` давав `AmbiguousMatchException` (два контролери з однаковим маршрутом). Тепер спільний лише контракт `Driver.proto`, а DTO поста — власний ([PostAboutDriverDto.cs](../DriversManagement/src/DriversManagement/Domain/Drivers/Dtos/PostAboutDriverDto.cs)). Сервіси діляться **контрактами**, а не **кодом**.
+> 🐞 **Реальний приклад із цього проєкту.** DriversManagement колись мав `ProjectReference` на весь проєкт BlogManagement (заради gRPC-типів і DTO постів). Наслідок: у процес DriversManagement завантажувались **контролери блогу**, і маршрут `/api/drivers` давав `AmbiguousMatchException` (два контролери з однаковим маршрутом). Тепер спільний лише контракт `Driver.proto`, а DTO поста — власний ([PostAboutDriverDto.cs](../DriversManagement/src/DriversManagement/Domain/Drivers/Dtos/PostAboutDriverDto.cs)). Сервіси діляться **контрактами**, а не **кодом**.
 
 У DDD модель даних підпорядковується бізнес-контексту:
 
 | Мікросервіс | Роль сутності водія | Які поля містить модель | Посилання на вихідний код проєкту |
 | :--- | :--- | :--- | :--- |
 | **`DriversManagement`** | **Rich Aggregate Root** (Повний агрегат, джерело правди) | Повне досьє: `FirstName`, `LastName`, `DriverLicenseNumber`, `Birthdate`, `Gender`, `Company`, `Photo`, `Expences` та ін. | [👉 **`Driver.cs`**](../DriversManagement/src/DriversManagement/Domain/Drivers/Driver.cs) — фабрика `Create` [#L67](../DriversManagement/src/DriversManagement/Domain/Drivers/Driver.cs#L67) |
-| **`CargoOrderingManager`** | **Logistics Shadow Model** (Тіньова копія) | Тільки логістичні атрибути: `Id`, `FirstName`, `LastName`, `DriverLicenseNumber`, `Phone`, зв'язок із `Deliveries` та `Orders` | [👉 **`Driver.cs`**](../CargoOrderingManager/src/CargoOrderingManager/Domain/Drivers/Driver.cs) — `CreateWithId` [#L31](../CargoOrderingManager/src/CargoOrderingManager/Domain/Drivers/Driver.cs#L31) |
-| **`DriversBlogManagement`** | **Social Shadow Model** (Соціальна копія) | Тільки публічні реквізити автора: `Id`, `FirstName`, `LastName`, `Likes` і пов'язаний `PostAboutDriver` | [👉 **`Driver.cs`**](../DriversBlogManagement/src/DriversBlogManagement/Domain/Drivers/Driver.cs) — `CreateWithId` [#L34](../DriversBlogManagement/src/DriversBlogManagement/Domain/Drivers/Driver.cs#L34) |
+| **`OrderingManagement`** | **Logistics Shadow Model** (Тіньова копія) | Тільки логістичні атрибути: `Id`, `FirstName`, `LastName`, `DriverLicenseNumber`, `Phone`, зв'язок із `Deliveries` та `Orders` | [👉 **`Driver.cs`**](../OrderingManagement/src/OrderingManagement/Domain/Drivers/Driver.cs) — `CreateWithId` [#L31](../OrderingManagement/src/OrderingManagement/Domain/Drivers/Driver.cs#L31) |
+| **`BlogManagement`** | **Social Shadow Model** (Соціальна копія) | Тільки публічні реквізити автора: `Id`, `FirstName`, `LastName`, `Likes` і пов'язаний `PostAboutDriver` | [👉 **`Driver.cs`**](../BlogManagement/src/BlogManagement/Domain/Drivers/Driver.cs) — `CreateWithId` [#L34](../BlogManagement/src/BlogManagement/Domain/Drivers/Driver.cs#L34) |
 
 > [!IMPORTANT]
-> **Автономність даних:** Якщо мікросервіс `DriversManagement` вимкнеться для технічного обслуговування, сервіс `CargoOrderingManager` **продовжує повноцінно працювати**, тому що всі потрібні водії вже репліковані у його власну таблицю `drivers`!
+> **Автономність даних:** Якщо мікросервіс `DriversManagement` вимкнеться для технічного обслуговування, сервіс `OrderingManagement` **продовжує повноцінно працювати**, тому що всі потрібні водії вже репліковані у його власну таблицю `drivers`!
 
 ### Чому тіньова копія має той самий `Id`
 Тіньовий водій створюється з **ідентифікатором оригіналу** (`CreateWithId(msg.DriverId, ...)`) — це «ключ кореляції» між контекстами: агрегатор питає доставки за тим самим `driverId`, за яким шукав водія в DriversManagement.
 
-> 🐞 **Пастка моделі Craftsman (виправлено).** Зв'язки «один-до-одного» були згенеровані зі **спільним первинним ключем** (`HasForeignKey<Driver>(s => s.Id)`): у DriversManagement `Driver.Id` мусив дорівнювати `Company.Id` **і** `Photo.Id` (вставка неможлива), а в блозі EF Core підміняв `Id` тіньового водія на `Id` порожнього поста — і кореляція ламалась. Тепер залежною стороною є `Company`/`Photo`/`PostAboutDriver` з окремою колонкою `driver_id` ([DM DriverConfiguration.cs](../DriversManagement/src/DriversManagement/Databases/EntityConfigurations/DriverConfiguration.cs), [Blog DriverConfiguration.cs](../DriversBlogManagement/src/DriversBlogManagement/Databases/EntityConfigurations/DriverConfiguration.cs)) + нові EF-міграції. Модель блогу досі має обмеження «один пост на водія» — це вже питання доменного дизайну, а не інфраструктури.
+> 🐞 **Пастка моделі Craftsman (виправлено).** Зв'язки «один-до-одного» були згенеровані зі **спільним первинним ключем** (`HasForeignKey<Driver>(s => s.Id)`): у DriversManagement `Driver.Id` мусив дорівнювати `Company.Id` **і** `Photo.Id` (вставка неможлива), а в блозі EF Core підміняв `Id` тіньового водія на `Id` порожнього поста — і кореляція ламалась. Тепер залежною стороною є `Company`/`Photo`/`PostAboutDriver` з окремою колонкою `driver_id` ([DM DriverConfiguration.cs](../DriversManagement/src/DriversManagement/Databases/EntityConfigurations/DriverConfiguration.cs), [Blog DriverConfiguration.cs](../BlogManagement/src/BlogManagement/Databases/EntityConfigurations/DriverConfiguration.cs)) + нові EF-міграції. Модель блогу досі має обмеження «один пост на водія» — це вже питання доменного дизайну, а не інфраструктури.
 
 ### Context Map: як контексти пов'язані
 | Відношення (DDD) | Між ким | Як реалізовано |

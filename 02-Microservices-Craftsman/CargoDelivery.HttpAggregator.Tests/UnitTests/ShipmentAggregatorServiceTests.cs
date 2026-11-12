@@ -88,7 +88,7 @@ public sealed class ShipmentAggregatorServiceTests
         _cargoOrderApiClient.GetActiveOrdersByDriverIdAsync(driverId, Arg.Any<CancellationToken>()).Returns(orders);
         // Імітуємо відмову мікросервісу блогу (503 Service Unavailable або SocketException)
         _driverBlogApiClient.GetRoadNotesByDriverIdAsync(driverId, Arg.Any<CancellationToken>())
-            .ThrowsAsync(new HttpRequestException("Підключення до DriversBlogManagement розірвано."));
+            .ThrowsAsync(new HttpRequestException("Підключення до BlogManagement розірвано."));
 
         // Act
         var result = await _sut.GetShipmentSummaryAsync(driverId);

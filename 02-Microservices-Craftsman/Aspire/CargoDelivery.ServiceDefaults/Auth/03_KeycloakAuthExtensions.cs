@@ -53,8 +53,8 @@ public static class KeycloakAuthExtensions
                         { "openid", "OpenID Connect" },
                         { "profile", "Профіль користувача" },
                         { "drivers_management", "Доступ до DriversManagement" },
-                        { "cargo_ordering", "Доступ до CargoOrderingManager" },
-                        { "blog_management", "Доступ до DriversBlogManagement" }
+                        { "cargo_ordering", "Доступ до OrderingManagement" },
+                        { "blog_management", "Доступ до BlogManagement" }
                     }
                 }
             }

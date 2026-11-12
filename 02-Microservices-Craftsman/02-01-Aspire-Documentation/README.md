@@ -42,8 +42,8 @@ flowchart TB
         
         subgraph Services ["⚡ Microservice APIs (.NET 10)"]
             DM["🚚 DriversManagement<br/>• Core Driver Entity & CRUD"]
-            DB["📝 DriversBlogManagement<br/>• Social Feed & gRPC Server"]
-            CO["📦 CargoOrderingManager<br/>• Logistics API & Orders"]
+            DB["📝 BlogManagement<br/>• Social Feed & gRPC Server"]
+            CO["📦 OrderingManagement<br/>• Logistics API & Orders"]
         end
 
         subgraph Gateway ["🛡️ Gateway Layer"]
@@ -51,8 +51,8 @@ flowchart TB
         end
 
         SQL -->|dev_driversmanagement| DM
-        SQL -->|dev_driversblogmanagement| DB
-        SQL -->|dev_cargoorderingmanager| CO
+        SQL -->|dev_blogmanagement| DB
+        SQL -->|dev_orderingmanagement| CO
 
         DM -.->|"Publish IDriverCreated / IDriverUpdated"| RMQ
         RMQ -.->|"Consume (sync-updated-driver)"| DB
@@ -88,8 +88,8 @@ dotnet run --project "02-Microservices-Craftsman\Aspire\CargoDelivery.AppHost\Ca
 | Що | Де / Значення |
 | :--- | :--- |
 | **Адреса дашборду** | `https://localhost:17048` — задана в [launchSettings.json AppHost](../Aspire/CargoDelivery.AppHost/Properties/launchSettings.json#L8). У консолі друкується рядок `Login to the dashboard at https://localhost:17048/login?t=...` — токен у URL і є «паролем» до дашборду. |
-| **Ресурсів у вкладці Resources** | **9**: `rabbitmq`, `sqlserver` (+3 бази `*-db`), `cargoorderingmanager`, `driversblogmanagement`, `driversmanagement`, `httpaggregator`. Усі — `Running`, у колонці health — `Healthy`. |
-| **Порти сервісів** | Фіксовані з `launchSettings.json` кожного проєкту: DriversManagement `5001`, DriversBlogManagement `5002`, CargoOrderingManager `5003`, HttpAggregator `57390` (HTTPS). Порти контейнерів (RabbitMQ, SQL) — **динамічні**, дивіться колонку *URLs*. |
+| **Ресурсів у вкладці Resources** | **9**: `rabbitmq`, `sqlserver` (+3 бази `*-db`), `orderingmanagement`, `blogmanagement`, `driversmanagement`, `httpaggregator`. Усі — `Running`, у колонці health — `Healthy`. |
+| **Порти сервісів** | Фіксовані з `launchSettings.json` кожного проєкту: DriversManagement `5001`, BlogManagement `5002`, OrderingManagement `5003`, HttpAggregator `57390` (HTTPS). Порти контейнерів (RabbitMQ, SQL) — **динамічні**, дивіться колонку *URLs*. |
 | **Готові запити для перевірки** | [CargoDelivery.HttpAggregator.http](../CargoDelivery.HttpAggregator/CargoDelivery.HttpAggregator.http) — створення водія, демо-дані, gRPC, BFF, агрегатор, сценарії Polly. |
 | **Демо-дані** | Наповнюються **автоматично** при кожному запуску (Bogus, українська локаль): 50 водіїв, 30 компаній, 15 вантажівок у DriversManagement → події `IDriverCreated` реплікують водіїв у блог і замовлення → там створюються 50 постів і 50 замовлень із доставками. Повна картина з'являється приблизно за 10–20 с після старту. Деталі — [гайд 01, §9.3](01_Aspire_Orchestration_AppHost_DeepDive.md#section-9). |
 | **Swagger** | У всіх чотирьох сервісах: `https://localhost:5001/swagger`, `:5002/swagger`, `:5003/swagger`, агрегатор — `https://localhost:57390/swagger` (посилання є в колонці *URLs* дашборду). |
@@ -100,7 +100,7 @@ dotnet run --project "02-Microservices-Craftsman\Aspire\CargoDelivery.AppHost\Ca
 
 | Симптом | Причина | Що зроблено в коді |
 | :--- | :--- | :--- |
-| `DistributedApplicationException: Cannot add resource ... 'cargoorderingmanager' because resource ... with that name already exists` | Імена ресурсів Aspire **регістронезалежні**: база `CargoOrderingManager` конфліктувала з проєктом `cargoorderingmanager`. | Ресурси БД перейменовано на `*-db`, а ключ рядка підключення задано через `connectionName` — [AppHost.cs#L47-L50](../Aspire/CargoDelivery.AppHost/AppHost.cs#L47-L50), [#L62](../Aspire/CargoDelivery.AppHost/AppHost.cs#L62). |
+| `DistributedApplicationException: Cannot add resource ... 'orderingmanagement' because resource ... with that name already exists` | Імена ресурсів Aspire **регістронезалежні**: база `OrderingManagement` конфліктувала з проєктом `orderingmanagement`. | Ресурси БД перейменовано на `*-db`, а ключ рядка підключення задано через `connectionName` — [AppHost.cs#L47-L50](../Aspire/CargoDelivery.AppHost/AppHost.cs#L47-L50), [#L62](../Aspire/CargoDelivery.AppHost/AppHost.cs#L62). |
 | `Newer version of the Aspire.Hosting.AppHost package is required` | SDK `Aspire.AppHost.Sdk/13.0.1` приносив старий оркестратор DCP, а пакети хостингу були 13.6.1. | SDK і пакети вирівняно до 13.6.1 — [CargoDelivery.AppHost.csproj#L1](../Aspire/CargoDelivery.AppHost/CargoDelivery.AppHost.csproj#L1). |
-| `Invalid object name 'companies'` / «таблиць немає» | `MigrateAsync` був закоментований, а в CargoOrderingManager міграцій немає взагалі — у свіжому контейнері БД залишалась порожньою. | Єдина стратегія: є міграції → `MigrateAsync`, немає → `EnsureCreatedAsync` — [MigrationHostedService.cs](../DriversManagement/src/DriversManagement/Databases/MigrationHostedService.cs#L48). |
+| `Invalid object name 'companies'` / «таблиць немає» | `MigrateAsync` був закоментований, а в OrderingManagement міграцій немає взагалі — у свіжому контейнері БД залишалась порожньою. | Єдина стратегія: є міграції → `MigrateAsync`, немає → `EnsureCreatedAsync` — [MigrationHostedService.cs](../DriversManagement/src/DriversManagement/Databases/MigrationHostedService.cs#L48). |
 | `Docker is not running` / контейнери не стартують | Не запущено Docker Desktop. | Запустіть Docker Desktop і перевірте `docker info`. |

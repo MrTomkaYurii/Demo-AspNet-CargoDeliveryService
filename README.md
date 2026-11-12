@@ -37,7 +37,7 @@ flowchart TB
 
     subgraph Block2 ["📦 02-Microservices-Craftsman (Clean Architecture & CQRS)"]
         Orders["CargoOrderingService\n(Замовлення та доставки)"]
-        Blog["DriversBlogManagement\n(Блог водіїв та відгуки)"]
+        Blog["BlogManagement\n(Блог водіїв та відгуки)"]
         DriversMs["DriversManagement\n(Мікросервіс водіїв)"]
         SharedK["SharedKernel (Events & DTOs)"]
         MsgBroker{{"Event Bus / MassTransit & gRPC"}}
@@ -77,7 +77,7 @@ Demo-CargoDeliveryService/
 │
 ├── 📂 02-Microservices-Craftsman/     <-- Блок 2: Мікросервіси Clean Architecture (Craftsman)
 │   ├── CargoOrderingService/          (Сервіс замовлень і доставок вантажів)
-│   ├── DriversBlogManagement/         (Сервіс блогу водіїв)
+│   ├── BlogManagement/         (Сервіс блогу водіїв)
 │   ├── DriversManagement/             (Сервіс обліку водіїв і автопарку)
 │   ├── SharedKernel/                  (Спільні контракти та доменні події)
 │   ├── Aspire/                        (Оркестрація AppHost та ServiceDefaults .NET Aspire)

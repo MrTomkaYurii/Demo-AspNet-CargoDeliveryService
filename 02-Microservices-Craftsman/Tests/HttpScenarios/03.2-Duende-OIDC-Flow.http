@@ -4,7 +4,7 @@
 # Демонструє виділений Security Token Service (STS) на базі Duende IdentityServer:
 #   1. Клієнт отримує асиметричний at+jwt токен (RS256) через OIDC Discovery.
 #   2. SmartAuthPolicy бачить iss від Duende -> направляє в DuendeScheme.
-#   3. Один токен відкриває доступ до DriversManagement, CargoOrderingManager і HttpAggregator.
+#   3. Один токен відкриває доступ до DriversManagement, OrderingManagement і HttpAggregator.
 # ====================================================================================
 
 @DuendeHost = https://localhost:5001
@@ -27,6 +27,6 @@ grant_type=client_credentials&client_id=m2m.client&client_secret=511536EF-F270-4
 GET {{DriversApiHost}}/api/drivers
 Authorization: Bearer {{duendeToken}}
 
-### КРОК 4: Виклик CargoOrderingManager із тим самим токеном 03.2
+### КРОК 4: Виклик OrderingManagement із тим самим токеном 03.2
 GET {{OrdersApiHost}}/api/orders
 Authorization: Bearer {{duendeToken}}

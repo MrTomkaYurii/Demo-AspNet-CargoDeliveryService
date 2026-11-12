@@ -1,0 +1,78 @@
+# 📦 Модуль Замовлень Вантажоперевезень (OrderingManagement)
+
+> **Блок 2:** `02-Microservices-Craftsman`  
+> **Сервіс замовлень:** Мікросервіс управління клієнтськими замовленнями на доставку вантажів, рейсами та логістичними маршрутами.
+
+---
+
+## 📌 Огляд мікросервісу
+
+Мікросервіс **`OrderingManagement`** відповідає за створення клієнтських замовлень на транспортування вантажів, формування рейсів (доправок) та призначення вантажів на конкретних водіїв.
+
+Для збереження автономності сервіс зберігає локальну репліку водіїв, синхронізовану через шину подій.
+
+---
+
+## 🏛️ Архітектурний стек
+
+* **Стиль архітектури:** Clean Architecture, Domain-Driven Design (DDD).
+* **Патерн CQRS:** Реалізація команд і запитів через **MediatR 12.2.0** з валідацією через **FluentValidation**.
+* **База даних та ORM:** Microsoft SQL Server, Entity Framework Core 8.0 (`OrderingManagementDbContext`).
+* **Асинхронна комунікація (MassTransit + RabbitMQ):**
+  * **Споживач подій (Consumer):** Слухає події `IDriverCreated` та `IDriverUpdated` від `DriversManagement` для оновлення локальної таблиці `Drivers`.
+  * **Видавець подій (Publisher):** Публікує доменну подію створення замовлення `IOrderCreated` в обмінник `order-created` (контракт `IOrderAssignedToDriver` описаний у SharedKernel, але поки не публікується; підписників на `IOrderCreated` теж поки немає).
+* **Діагностика та оркестрація (.NET 10 + .NET Aspire):**
+  * Підключено `CargoDelivery.ServiceDefaults` з нативним OTLP експортером телеметрії та Service Discovery.
+
+---
+
+## 📁 Структура проєктів
+
+```
+02-Microservices-Craftsman/OrderingManagement/
+├── src/
+│   └── OrderingManagement/                 # Web API, Доменні сутності Orders/Deliveries, DbContext
+└── tests/
+    ├── OrderingManagement.UnitTests/       # Модульні тести бізнес-логіки (37 тестів)
+    ├── OrderingManagement.IntegrationTests/# Інтеграційні тести бази даних
+    ├── OrderingManagement.FunctionalTests/ # Функціональні тести API
+    └── OrderingManagement.SharedTestHelpers/# Генератори тестових даних (Bogus)
+```
+
+---
+
+## 🛠️ Основні REST API контролери
+
+| Контролер | Маршрут | Призначення |
+| :--- | :--- | :--- |
+| `OrdersController` | `/api/orders` | Створення та облік замовлень на перевезення вантажів (публікує `IOrderCreated`) |
+| `DeliveriesController` | `/api/deliveries` | Управління доставками, відстеження статусів виконання |
+| `InternalDeliveriesController` | `/api/internal/deliveries?driverId=` | Внутрішній ендпоінт для агрегаторів + `POST .../demo-seed?driverId=` для лабораторних |
+| `UsersController` / `RolesController` | `/api/users`, `/api/roles` | Користувачі та контроль доступу |
+
+> ℹ️ У цьому сервісі немає EF-міграцій — схема створюється при старті через `EnsureCreatedAsync()` (див. `Databases/MigrationHostedService.cs`).
+
+---
+
+## 🔄 Міжсервісна взаємодія
+
+```mermaid
+flowchart TD
+    RMQ["🐰 RabbitMQ Broker"]
+    CO["📦 OrderingManagement API"]
+
+    RMQ -- "IDriverCreated, IDriverUpdated" --> SyncCons["SyncDriverInOrdering Consumer"]
+    SyncCons --> CO_DB[("CargoOrdering DB (Local Drivers)")]
+    
+    CO -- "Publish(IOrderCreated)" --> RMQ
+```
+
+---
+
+## 🧪 Тестування
+
+* Модульні тести: **37 passed (100% успішність)**.
+* Запуск тестів:
+  ```powershell
+  dotnet test 02-Microservices-Craftsman/OrderingManagement/tests/OrderingManagement.UnitTests/OrderingManagement.UnitTests.csproj
+  ```

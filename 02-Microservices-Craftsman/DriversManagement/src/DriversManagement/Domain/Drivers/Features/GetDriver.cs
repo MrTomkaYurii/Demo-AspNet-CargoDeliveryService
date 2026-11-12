@@ -7,7 +7,7 @@ using DriversManagement.Domain;
 using HeimGuard;
 using Mappings;
 using MediatR;
-using DriversBlogManagement;
+using BlogManagement;
 using Grpc.Core;
 using System.Linq;
 
@@ -20,7 +20,7 @@ using System.Linq;
 /// 1. ПРИЗНАЧЕННЯ:
 ///    Цей CQRS-обробник зчитує картку водія з локальної бази даних DriversManagement DB
 ///    та робить СИНХРОННИЙ БІНАРНИЙ виклик по протоколу HTTP/2 через gRPC до віддаленого
-///    мікросервісу DriversBlogManagement для отримання його публікацій.
+///    мікросервісу BlogManagement для отримання його публікацій.
 ///
 /// 2. ЧОМУ ТУТ ВИКОРИСТОВУЄТЬСЯ gRPC ЗАМІСТЬ ЗВИЧАЙНОГО REST HTTP?
 ///    - Висока продуктивність: gRPC використовує постійний HTTP/2 мультиплексований канал,
@@ -41,7 +41,7 @@ using System.Linq;
 /// 4. SERVICE DISCOVERY В .NET ASPIRE:
 ///    Клієнт зареєстрований у WebAppServiceConfiguration.cs через AddGrpcClient(...).
 ///    Адресація автоматично транслюється на запущений контейнер або процес
-///    через ім'я "driversblogmanagement".
+///    через ім'я "blogmanagement".
 /// ====================================================================================
 /// </summary>
 public static class GetDriver
@@ -83,7 +83,7 @@ public static class GetDriver
 
             result.Driver = drvDTO;
 
-            // КРОК 2: Синхронний віддалений RPC-виклик до мікросервісу DriversBlogManagement
+            // КРОК 2: Синхронний віддалений RPC-виклик до мікросервісу BlogManagement
             try
             {
                 // Створюємо Protobuf-запит згідно з контрактом Driver.proto

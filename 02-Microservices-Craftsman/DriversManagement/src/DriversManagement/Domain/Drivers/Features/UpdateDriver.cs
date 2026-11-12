@@ -47,8 +47,8 @@ public static class UpdateDriver
         ///    Публікуємо SharedKernel.Messages.IDriverUpdated через IPublishEndpoint.
         ///    MassTransit спрямовує повідомлення у RabbitMQ Fanout Exchange 'driver-updated',
         ///    який миттєво дублює його у черги:
-        ///      - sync-updated-driver (DriversBlogManagement)
-        ///      - ordering-sync-driver (CargoOrderingManager)
+        ///      - sync-updated-driver (BlogManagement)
+        ///      - ordering-sync-driver (OrderingManagement)
         /// 4. EVENTUAL CONSISTENCY (Кінцева узгодженість):
         ///    Всі сервіси отримують новий стан водія асинхронно, без блокування клієнтського запиту.
         /// ====================================================================================

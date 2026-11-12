@@ -34,10 +34,10 @@ var rabbitmq = builder.AddRabbitMQ("rabbitmq")
 // логічну БД, унеможливлюючи несанкціонований доступ до чужих таблиць напряму через SQL.
 //
 // ⚠️ ВАЖЛИВО: імена ресурсів в Aspire РЕГІСТРОНЕЗАЛЕЖНІ та мають бути унікальними.
-// Якщо назвати базу "CargoOrderingManager", а проєкт — "cargoorderingmanager", AppHost
+// Якщо назвати базу "OrderingManagement", а проєкт — "orderingmanagement", AppHost
 // впаде на старті з DistributedApplicationException ("resource ... already exists").
 // Тому ресурси БД мають суфікс "-db", а очікуване сервісом ім'я рядка підключення
-// (ConnectionStrings:CargoOrderingManager тощо) задається явно через connectionName
+// (ConnectionStrings:OrderingManagement тощо) задається явно через connectionName
 // у .WithReference(...) нижче.
 //
 // Другий аргумент AddDatabase — фізична назва БД всередині SQL Server. Якщо БД ще
@@ -46,8 +46,8 @@ var rabbitmq = builder.AddRabbitMQ("rabbitmq")
 // ====================================================================================
 var sqlserver = builder.AddSqlServer("sqlserver");
 var driversDb = sqlserver.AddDatabase("driversmanagement-db", "dev_driversmanagement");
-var blogDb = sqlserver.AddDatabase("driversblogmanagement-db", "dev_driversblogmanagement");
-var cargoDb = sqlserver.AddDatabase("cargoorderingmanager-db", "dev_cargoorderingmanager");
+var blogDb = sqlserver.AddDatabase("blogmanagement-db", "dev_blogmanagement");
+var cargoDb = sqlserver.AddDatabase("orderingmanagement-db", "dev_orderingmanagement");
 var authJwtDb = sqlserver.AddDatabase("auth-jwt-db", "DriversManagementJWT");
 
 // ====================================================================================
@@ -96,16 +96,16 @@ var duendeAuth = builder.AddProject<Projects.DuendeIdentityInMemory>("auth-duend
     .WaitFor(keycloak);
 
 // ====================================================================================
-// 📦 3. МІКРОСЕРВІС ЗАМОВЛЕНЬ ТА ДОСТАВОК: CargoOrderingManager
+// 📦 3. МІКРОСЕРВІС ЗАМОВЛЕНЬ ТА ДОСТАВОК: OrderingManagement
 // ------------------------------------------------------------------------------------
 // - Володіє логістичним доменом (Order, Delivery, Carrier).
 // - MassTransit Consumer для IDriverCreated / IDriverUpdated (актуалізація водіїв).
 // - MassTransit Publisher для IOrderCreated.
 // - Внутрішній REST-ендпоінт api/internal/deliveries для агрегаторів.
 // ====================================================================================
-var cargoApi = builder.AddProject<Projects.CargoOrderingManager>("cargoorderingmanager")
-    // connectionName → змінна ConnectionStrings__CargoOrderingManager, яку читає ConnectionStringOptions сервісу
-    .WithReference(cargoDb, connectionName: "CargoOrderingManager")
+var cargoApi = builder.AddProject<Projects.OrderingManagement>("orderingmanagement")
+    // connectionName → змінна ConnectionStrings__OrderingManagement, яку читає ConnectionStringOptions сервісу
+    .WithReference(cargoDb, connectionName: "OrderingManagement")
     .WithReference(rabbitmq)
     .WithEnvironment("Auth__Mode", "Multi")
     .WithEnvironment("Auth__SimpleJwt__Secret", "TOPSECRETKEYFORDRIVERMANAGEMENTSYSTEM")
@@ -120,15 +120,15 @@ var cargoApi = builder.AddProject<Projects.CargoOrderingManager>("cargoorderingm
     .WaitFor(rabbitmq);
 
 // ====================================================================================
-// 📝 4. МІКРОСЕРВІС БЛОГУ ВОДІЇВ: DriversBlogManagement
+// 📝 4. МІКРОСЕРВІС БЛОГУ ВОДІЇВ: BlogManagement
 // ------------------------------------------------------------------------------------
 // - Соціальний домен (Post, Comment, Like, Shadow Driver).
 // - gRPC Server: реалізує DriverRpcService (HTTP/2 бінарний контракт).
 // - MassTransit Consumer: асинхронно синхронізує Shadow Drivers.
 // - HTTP REST API: публічні ендпоінти блогу + внутрішній api/internal/postaboutdrivers для агрегаторів.
 // ====================================================================================
-var blogApi = builder.AddProject<Projects.DriversBlogManagement>("driversblogmanagement")
-    .WithReference(blogDb, connectionName: "DriversBlogManagement")
+var blogApi = builder.AddProject<Projects.BlogManagement>("blogmanagement")
+    .WithReference(blogDb, connectionName: "BlogManagement")
     .WithReference(rabbitmq)
     .WithEnvironment("Auth__Mode", "Multi")
     .WithEnvironment("Auth__SimpleJwt__Secret", "TOPSECRETKEYFORDRIVERMANAGEMENTSYSTEM")
@@ -145,9 +145,9 @@ var blogApi = builder.AddProject<Projects.DriversBlogManagement>("driversblogman
 // ------------------------------------------------------------------------------------
 // - Володіє повним досьє водія (Driver Aggregate Root).
 // - MassTransit Publisher: ініціює події створення та оновлення водія.
-// - gRPC Client: викликає DriversBlogManagement напряму по HTTP/2 Protobuf.
-// - HTTP Gateway Aggregator / BFF: паралельно опитує CargoOrderingManager та
-//   DriversBlogManagement через Task.WhenAll для формування зведеного дашборду.
+// - gRPC Client: викликає BlogManagement напряму по HTTP/2 Protobuf.
+// - HTTP Gateway Aggregator / BFF: паралельно опитує OrderingManagement та
+//   BlogManagement через Task.WhenAll для формування зведеного дашборду.
 // - .WaitFor(...) гарантує, що сервіс стартує лише після повної готовності БД, брокера
 //   та суміжних API, усуваючи неприємні стартові винятки Connection Refused!
 // ====================================================================================

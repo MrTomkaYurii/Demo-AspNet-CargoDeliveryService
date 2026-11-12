@@ -10,8 +10,8 @@
 
 У мікросервісній архітектурі бізнес-дані навмисно розділені між незалежними доменами (**Bounded Contexts**):
 * `DriversManagement` володіє інформацією про водія, компанію та закріплену вантажівку.
-* `CargoOrderingManager` володіє замовленнями, маршрутами та статусами доставки.
-* `DriversBlogManagement` володіє публікаціями водія, коментарями та рейтингом.
+* `OrderingManagement` володіє замовленнями, маршрутами та статусами доставки.
+* `BlogManagement` володіє публікаціями водія, коментарями та рейтингом.
 
 Коли користувач відкриває веб-портал, мобільний додаток або десктопний клієнт (наприклад, **WPFDrivers**), йому потрібен **єдиний зведений екран** — *"Аналітична панель водія"* (Driver Dashboard).
 
@@ -61,8 +61,8 @@ sequenceDiagram
     actor UI as 📱 Клієнт (Web / Mobile / WPF)
     participant Agg as 🛡️ DriversManagement BFF (GetDriverDashboard.Handler)
     participant LDB as 🗄️ DriversManagement DB (локально)
-    participant CO as 📦 CargoOrderingManager (HTTP)
-    participant DB as 📝 DriversBlogManagement (HTTP)
+    participant CO as 📦 OrderingManagement (HTTP)
+    participant DB as 📝 BlogManagement (HTTP)
 
     UI->>Agg: GET /api/v1/driver-dashboard/{id}
     Agg->>LDB: GetById(id) — Guard Check
@@ -71,10 +71,10 @@ sequenceDiagram
 
     par Вантажівка з локальної БД
         Agg->>LDB: Trucks.FirstOrDefault
-    and Запит до CargoOrderingManager
+    and Запит до OrderingManagement
         Agg->>CO: GET /api/internal/deliveries?driverId={id}
         CO-->>Agg: 200 OK (Deliveries List)
-    and Запит до DriversBlogManagement
+    and Запит до BlogManagement
         Agg->>DB: GET /api/internal/postaboutdrivers?driverId={id}
         alt Сервіс блогу доступний
             DB-->>Agg: 200 OK (Posts)
@@ -99,8 +99,8 @@ flowchart TD
     
     subgraph FanOut["Паралельний Fan-Out (Task.WhenAll)"]
         Agg -->|1. Локальний запит EF Core| LocalDB[("🗄️ Drivers DB<br/>(Вантажівка)")]
-        Agg -->|2. HTTP GET /api/internal/deliveries| CO["📦 CargoOrderingManager<br/>(Доставки водія)"]
-        Agg -->|3. HTTP GET /api/internal/postaboutdrivers| DB["📝 DriversBlogManagement<br/>(Останні пости)"]
+        Agg -->|2. HTTP GET /api/internal/deliveries| CO["📦 OrderingManagement<br/>(Доставки водія)"]
+        Agg -->|3. HTTP GET /api/internal/postaboutdrivers| DB["📝 BlogManagement<br/>(Останні пости)"]
     end
     
     LocalDB -->|Truck| FanIn["🔄 Fan-In: Злиття та композиція"]
@@ -144,7 +144,7 @@ public async Task<List<AggregatedDeliveryDto>> GetActiveDeliveriesByDriverAsync(
     try
     {
         // Внутрішній (service-to-service) ендпоінт з фільтром за водієм.
-        // BaseAddress = https+http://cargoorderingmanager (резолвить Aspire Service Discovery)
+        // BaseAddress = https+http://orderingmanagement (резолвить Aspire Service Discovery)
         var requestUri = $"api/internal/deliveries?driverId={driverId}";
 
         var response = await _httpClient.GetFromJsonAsync<JsonElement>(requestUri, cancellationToken);
@@ -175,7 +175,7 @@ public async Task<List<AggregatedDeliveryDto>> GetActiveDeliveriesByDriverAsync(
 }
 ```
 
-> 🧩 **Tolerant Reader (Мартін Фаулер).** Клієнт розбирає `JsonElement` вручну і бере лише ті поля, які йому потрібні. Якщо CargoOrderingManager додасть нове поле чи змінить порядок — клієнт не зламається. Ціна — немає перевірки типів на етапі компіляції; альтернатива — власний DTO + `ReadFromJsonAsync<T>()`, як у виділеному агрегаторі.
+> 🧩 **Tolerant Reader (Мартін Фаулер).** Клієнт розбирає `JsonElement` вручну і бере лише ті поля, які йому потрібні. Якщо OrderingManagement додасть нове поле чи змінить порядок — клієнт не зламається. Ціна — немає перевірки типів на етапі компіляції; альтернатива — власний DTO + `ReadFromJsonAsync<T>()`, як у виділеному агрегаторі.
 
 > 🐞 **Що було виправлено.** Клієнти звертались до `api/v1/deliveries` і `api/v1/postaboutdrivers` — таких маршрутів не існує (публічні маршрути Craftsman — `api/deliveries`, `api/postaboutdrivers`), до того ж публічні ендпоінти повертають **усі** записи з пагінацією і вимагали JWT. Результат — дашборд завжди був «частковим». Тепер BFF використовує внутрішні ендпоінти з фільтром за водієм.
 
@@ -211,11 +211,11 @@ public interface IDriversBlogApiClient
 ```csharp
 // Замовлення: логічне ім'я + глобальний стандартний конвеєр Polly із ServiceDefaults
 builder.Services.AddHttpClient<ICargoOrderingApiClient, CargoOrderingApiClient>(client =>
-    client.BaseAddress = new Uri("https+http://cargoorderingmanager"));
+    client.BaseAddress = new Uri("https+http://orderingmanagement"));
 
 // Блог — НЕКРИТИЧНА залежність дашборду, тож для нього короткий бюджет часу
 builder.Services.AddHttpClient<IDriversBlogApiClient, DriversBlogApiClient>(client =>
-        client.BaseAddress = new Uri("https+http://driversblogmanagement"))
+        client.BaseAddress = new Uri("https+http://blogmanagement"))
     .RemoveAllResilienceHandlers()
     .AddStandardResilienceHandler(SoftDependencyBudget);
 
@@ -231,7 +231,7 @@ private static void SoftDependencyBudget(HttpStandardResilienceOptions options)
 
 | Елемент | Пояснення |
 | :--- | :--- |
-| `https+http://cargoorderingmanager` | Логічне ім'я ресурсу з AppHost. Service Discovery підставляє `services__cargoorderingmanager__https__0` (`https://localhost:5003`) |
+| `https+http://orderingmanagement` | Логічне ім'я ресурсу з AppHost. Service Discovery підставляє `services__orderingmanagement__https__0` (`https://localhost:5003`) |
 | Без `.AddStandardResilienceHandler()` для замовлень | Стандартний конвеєр уже доданий **глобально** через `AddServiceDefaults()`. Повторний виклик вклав би конвеєри один в одного (див. [02-01 гайд 06, §4](../02-01-Aspire-Documentation/06_ServiceDiscovery_Resilience_Polly_HttpClient.md#section-4)) |
 | `RemoveAllResilienceHandlers()` + `SoftDependencyBudget` для блогу | Замість стандартних 30 с — не більше 3 с; при недоступному блозі дашборд відповідає за ≈2 с |
 
@@ -329,9 +329,9 @@ return new AggregatedDriverDashboardDto
     ├── SQL SELECT drivers … WHERE id = @id           (SqlClient, послідовно)
     ├── SQL SELECT TOP(1) trucks …                     (паралельно ↓)
     ├── GET https://localhost:5003/api/internal/deliveries?driverId=…
-    │   └── [CargoOrderingManager] GET api/internal/deliveries → SQL SELECT deliveries
+    │   └── [OrderingManagement] GET api/internal/deliveries → SQL SELECT deliveries
     └── GET https://localhost:5002/api/internal/postaboutdrivers?driverId=…
-        └── [DriversBlogManagement] GET api/internal/postaboutdrivers → SQL SELECT post_about_drivers
+        └── [BlogManagement] GET api/internal/postaboutdrivers → SQL SELECT post_about_drivers
 ```
 
 Розробник на одному екрані бачить:
@@ -348,7 +348,7 @@ return new AggregatedDriverDashboardDto
 - [x] **Впроваджуйте Graceful Degradation:** помилка в другорядному блозі не повинна блокувати перегляд профілю водія.
 - [x] **Задавайте окремий бюджет часу для некритичних залежностей:** деградація за 30 с — це не деградація.
 - [x] **Один конвеєр Polly на клієнт:** глобальний із ServiceDefaults або власний після `RemoveAllResilienceHandlers()`.
-- [x] **Використовуйте Aspire Service Discovery:** звертайтеся за логічними іменами сервісів (`https+http://cargoorderingmanager`).
+- [x] **Використовуйте Aspire Service Discovery:** звертайтеся за логічними іменами сервісів (`https+http://orderingmanagement`).
 - [x] **Прокидайте `CancellationToken`:** скасовуйте внутрішні HTTP-виклики, якщо клієнт закрив браузер чи вкладку.
 - [x] **Не діліть DbContext між паралельними задачами.**
 
@@ -367,6 +367,6 @@ return new AggregatedDriverDashboardDto
 * 📱 **BFF Контролер:**
   * [👉 **Перейти до DriverDashboardController.cs**](../DriversManagement/src/DriversManagement/Controllers/v1/DriverDashboardController.cs#L49)
 * 🎯 **Цільові внутрішні ендпоінти:**
-  * [👉 **InternalDeliveriesController.cs (CargoOrderingManager)**](../CargoOrderingManager/src/CargoOrderingManager/Controllers/v1/InternalDeliveriesController.cs#L46)
-  * [👉 **InternalPostAboutDriversController.cs (DriversBlogManagement)**](../DriversBlogManagement/src/DriversBlogManagement/Controllers/v1/InternalPostAboutDriversController.cs#L45)
+  * [👉 **InternalDeliveriesController.cs (OrderingManagement)**](../OrderingManagement/src/OrderingManagement/Controllers/v1/InternalDeliveriesController.cs#L46)
+  * [👉 **InternalPostAboutDriversController.cs (BlogManagement)**](../BlogManagement/src/BlogManagement/Controllers/v1/InternalPostAboutDriversController.cs#L45)
 * 🧪 **Готові запити:** [CargoDelivery.HttpAggregator.http](../CargoDelivery.HttpAggregator/CargoDelivery.HttpAggregator.http) (запит 6️⃣)

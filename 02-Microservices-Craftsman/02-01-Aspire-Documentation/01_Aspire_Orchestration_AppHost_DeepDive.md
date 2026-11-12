@@ -46,8 +46,8 @@ flowchart TD
 
     subgraph Distributed ["⚡ Розподілена система (Distributed Network)"]
         D_UI["HttpAggregator"] -->|TCP Handshake + TLS + Serialization: ~5-25 ms| D_DM["DriversManagement"]
-        D_UI -->|DNS Resolve + Network Latency: ~10-40 ms| D_CO["CargoOrderingManager"]
-        D_UI -->|Socket Allocation + HTTP Transfer: ~8-30 ms| D_DB["DriversBlogManagement"]
+        D_UI -->|DNS Resolve + Network Latency: ~10-40 ms| D_CO["OrderingManagement"]
+        D_UI -->|Socket Allocation + HTTP Transfer: ~8-30 ms| D_DB["BlogManagement"]
     end
 ```
 
@@ -105,8 +105,8 @@ flowchart TB
             SQL[("💾 MS SQL Server 2022<br/>(динамічний порт)")]
             
             DB_DM[("driversmanagement-db<br/>dev_driversmanagement")]
-            DB_DB[("driversblogmanagement-db<br/>dev_driversblogmanagement")]
-            DB_CO[("cargoorderingmanager-db<br/>dev_cargoorderingmanager")]
+            DB_DB[("blogmanagement-db<br/>dev_blogmanagement")]
+            DB_CO[("orderingmanagement-db<br/>dev_orderingmanagement")]
             
             SQL --> DB_DM
             SQL --> DB_DB
@@ -115,8 +115,8 @@ flowchart TB
 
         subgraph CoreAPIs ["⚡ Business Microservice Nodes (.NET 10)"]
             DM["🚚 DriversManagement :5001<br/>(Core Aggregate Root, BFF & gRPC Client)"]
-            DB["📝 DriversBlogManagement :5002<br/>(Social Domain & gRPC Server)"]
-            CO["📦 CargoOrderingManager :5003<br/>(Logistics Delivery & Orders API)"]
+            DB["📝 BlogManagement :5002<br/>(Social Domain & gRPC Server)"]
+            CO["📦 OrderingManagement :5003<br/>(Logistics Delivery & Orders API)"]
         end
 
         subgraph DispatcherHub ["🛡️ Resilient Gateway Layer"]
@@ -147,7 +147,7 @@ flowchart TB
     AppHostContainer -.->|OTLP Protocol gRPC/Protobuf| D_UI
 ```
 
-> ℹ️ Подію `IOrderCreated` CargoOrderingManager публікує в обмінник `order-created`, але **жоден сервіс на неї поки не підписаний** — це «заділ» під майбутні модулі (Billing, Notifications). RabbitMQ у такому разі просто відкидає повідомлення, бо до обмінника не прив'язано жодної черги. Детальніше — у [04_Patterns_Asynchronous_Messaging](../02-02-Communication-Documentation/04_Patterns_Asynchronous_Messaging_MassTransit_RabbitMQ.md).
+> ℹ️ Подію `IOrderCreated` OrderingManagement публікує в обмінник `order-created`, але **жоден сервіс на неї поки не підписаний** — це «заділ» під майбутні модулі (Billing, Notifications). RabbitMQ у такому разі просто відкидає повідомлення, бо до обмінника не прив'язано жодної черги. Детальніше — у [04_Patterns_Asynchronous_Messaging](../02-02-Communication-Documentation/04_Patterns_Asynchronous_Messaging_MassTransit_RabbitMQ.md).
 
 ---
 
@@ -178,8 +178,8 @@ flowchart TB
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\CargoOrderingManager\src\CargoOrderingManager\CargoOrderingManager.csproj" />
-    <ProjectReference Include="..\..\DriversBlogManagement\src\DriversBlogManagement\DriversBlogManagement.csproj" />
+    <ProjectReference Include="..\..\OrderingManagement\src\OrderingManagement\OrderingManagement.csproj" />
+    <ProjectReference Include="..\..\BlogManagement\src\BlogManagement\BlogManagement.csproj" />
     <ProjectReference Include="..\..\DriversManagement\src\DriversManagement\DriversManagement.csproj" />
     <ProjectReference Include="..\..\CargoDelivery.HttpAggregator\CargoDelivery.HttpAggregator.csproj" />
   </ItemGroup>
@@ -205,20 +205,20 @@ var rabbitmq = builder.AddRabbitMQ("rabbitmq")
 // 💾 2. SQL Server 2022 + три ізольовані бази (Database-per-Microservice)
 var sqlserver = builder.AddSqlServer("sqlserver");
 var driversDb = sqlserver.AddDatabase("driversmanagement-db", "dev_driversmanagement");
-var blogDb = sqlserver.AddDatabase("driversblogmanagement-db", "dev_driversblogmanagement");
-var cargoDb = sqlserver.AddDatabase("cargoorderingmanager-db", "dev_cargoorderingmanager");
+var blogDb = sqlserver.AddDatabase("blogmanagement-db", "dev_blogmanagement");
+var cargoDb = sqlserver.AddDatabase("orderingmanagement-db", "dev_orderingmanagement");
 
-// 📦 3. CargoOrderingManager
-var cargoApi = builder.AddProject<Projects.CargoOrderingManager>("cargoorderingmanager")
-    .WithReference(cargoDb, connectionName: "CargoOrderingManager")
+// 📦 3. OrderingManagement
+var cargoApi = builder.AddProject<Projects.OrderingManagement>("orderingmanagement")
+    .WithReference(cargoDb, connectionName: "OrderingManagement")
     .WithReference(rabbitmq)
     .WithHttpHealthCheck("/health")
     .WaitFor(cargoDb)
     .WaitFor(rabbitmq);
 
-// 📝 4. DriversBlogManagement
-var blogApi = builder.AddProject<Projects.DriversBlogManagement>("driversblogmanagement")
-    .WithReference(blogDb, connectionName: "DriversBlogManagement")
+// 📝 4. BlogManagement
+var blogApi = builder.AddProject<Projects.BlogManagement>("blogmanagement")
+    .WithReference(blogDb, connectionName: "BlogManagement")
     .WithReference(rabbitmq)
     .WithHttpHealthCheck("/health")
     .WaitFor(blogDb)
@@ -256,8 +256,8 @@ builder.Build().Run();
 | Створення білдера | [#L13](../Aspire/CargoDelivery.AppHost/AppHost.cs#L13) | `DistributedApplication.CreateBuilder(args)` — модель застосунку (Application Model), до якої додаються ресурси |
 | RabbitMQ | [#L27-L28](../Aspire/CargoDelivery.AppHost/AppHost.cs#L27-L28) | Контейнер брокера + Management UI |
 | SQL Server та бази | [#L47-L50](../Aspire/CargoDelivery.AppHost/AppHost.cs#L47-L50) | Один контейнер, три логічні БД з унікальними іменами `*-db` |
-| CargoOrderingManager | [#L60-L68](../Aspire/CargoDelivery.AppHost/AppHost.cs#L60-L68) | Залежить лише від своєї БД і брокера |
-| DriversBlogManagement | [#L78-L83](../Aspire/CargoDelivery.AppHost/AppHost.cs#L78-L83) | Залежить лише від своєї БД і брокера |
+| OrderingManagement | [#L60-L68](../Aspire/CargoDelivery.AppHost/AppHost.cs#L60-L68) | Залежить лише від своєї БД і брокера |
+| BlogManagement | [#L78-L83](../Aspire/CargoDelivery.AppHost/AppHost.cs#L78-L83) | Залежить лише від своєї БД і брокера |
 | DriversManagement | [#L96-L105](../Aspire/CargoDelivery.AppHost/AppHost.cs#L96-L105) | Додатково чекає на блог (gRPC) і замовлення (HTTP BFF) |
 | HttpAggregator | [#L116-L123](../Aspire/CargoDelivery.AppHost/AppHost.cs#L116-L123) | Чекає на всі три бізнес-сервіси |
 | Запуск | [#L125](../Aspire/CargoDelivery.AppHost/AppHost.cs#L125) | `Build().Run()` — старт DCP, дашборду і всіх ресурсів |
@@ -292,8 +292,8 @@ builder.Build().Run();
 ### 5.2. Контейнер MS SQL Server 2022 та Database-per-Microservice
 Команда `builder.AddSqlServer("sqlserver")` ([AppHost.cs#L47](../Aspire/CargoDelivery.AppHost/AppHost.cs#L47)) створює один спільний інстанс СУБД MS SQL Server 2022 (`mcr.microsoft.com/mssql/server:2022-latest`) і генерує пароль `sa` (параметр `sqlserver-password`). За допомогою викликів `.AddDatabase(...)` ([#L48-L50](../Aspire/CargoDelivery.AppHost/AppHost.cs#L48-L50)) система строго реалізує архітектурний патерн **Database-per-Microservice**:
 * `dev_driversmanagement`: Схема досьє водія, фото, техогляди, закріплені вантажівки.
-* `dev_driversblogmanagement`: Схема соціального блогу, публікації, лайки, коментарі, тіньові водії.
-* `dev_cargoorderingmanager`: Схема логістичних рейсів, вантажів, статусів доставок, тіньові водії.
+* `dev_blogmanagement`: Схема соціального блогу, публікації, лайки, коментарі, тіньові водії.
+* `dev_orderingmanagement`: Схема логістичних рейсів, вантажів, статусів доставок, тіньові водії.
 
 У `AddDatabase(name, databaseName)` два різні імена:
 * `name` (`driversmanagement-db`) — **ім'я ресурсу Aspire**: відображається в дашборді, має бути унікальним у межах усього AppHost **без урахування регістру**;
@@ -320,13 +320,13 @@ graph TD
 
     subgraph Layer1 ["Рівень 1: Логічні Бази Даних"]
         DB1["🗄️ driversmanagement-db"]
-        DB2["🗄️ driversblogmanagement-db"]
-        DB3["🗄️ cargoorderingmanager-db"]
+        DB2["🗄️ blogmanagement-db"]
+        DB3["🗄️ orderingmanagement-db"]
     end
 
     subgraph Layer2 ["Рівень 2: Автономні Бізнес-Сервіси"]
-        CO["📦 CargoOrderingManager"]
-        DB["📝 DriversBlogManagement"]
+        CO["📦 OrderingManagement"]
+        DB["📝 BlogManagement"]
     end
 
     subgraph Layer3 ["Рівень 3: Сервіси зі Зв'язками"]
@@ -360,7 +360,7 @@ graph TD
 3. Повторювати, доки граф не спорожніє.
 
 Звідси дві важливі властивості:
-* **Паралелізм рівнів.** Сервіси одного рівня (CargoOrderingManager і DriversBlogManagement) стартують одночасно — це видно в дашборді за однаковим `Start time`. Загальний час старту ≈ сума часу «найповільнішого» вузла на кожному рівні, а не сума всіх вузлів.
+* **Паралелізм рівнів.** Сервіси одного рівня (OrderingManagement і BlogManagement) стартують одночасно — це видно в дашборді за однаковим `Start time`. Загальний час старту ≈ сума часу «найповільнішого» вузла на кожному рівні, а не сума всіх вузлів.
 * **Заборона циклів.** Якщо A чекає на B, а B на A, жоден не стартує ніколи (deadlock). Тому граф має бути ациклічним — саме через це агрегатор не може зробити `.WithReference(httpAggregator)` сам на себе.
 
 ### 6.2. Що саме означає «готовий» для `.WaitFor()`
@@ -382,7 +382,7 @@ Aspire відстежує для кожного ресурсу **стан** (`St
   Microsoft.Data.SqlClient.SqlException (0x80131904): 
   A network-related or instance-specific error occurred while establishing a connection to SQL Server.
   ```
-* **З `.WaitFor(cargoDb)`:** Aspire переводить проєкт `CargoOrderingManager` у стан `Waiting`. Оркестратор періодично виконує перевірку здоров'я ресурсу бази даних. Тільки коли SQL Server і сама база готові приймати запити, знімається блокування запуску .NET-процесу!
+* **З `.WaitFor(cargoDb)`:** Aspire переводить проєкт `OrderingManagement` у стан `Waiting`. Оркестратор періодично виконує перевірку здоров'я ресурсу бази даних. Тільки коли SQL Server і сама база готові приймати запити, знімається блокування запуску .NET-процесу!
 
 ---
 
@@ -410,8 +410,8 @@ var httpAggregator = builder.AddProject<Projects.CargoDelivery_HttpAggregator>("
 2. **Динамічна генерація Service Discovery змінних:**
    У процес `httpaggregator` автоматично інжектуються змінні середовища (перевірено в деталях ресурсу в дашборді):
    * `services__driversmanagement__https__0 = https://localhost:5001`
-   * `services__cargoorderingmanager__https__0 = https://localhost:5003`
-   * `services__driversblogmanagement__https__0 = https://localhost:5002`
+   * `services__orderingmanagement__https__0 = https://localhost:5003`
+   * `services__blogmanagement__https__0 = https://localhost:5002`
    
    Ключі `http__0` не з'являються, бо в `launchSettings.json` наших сервісів оголошено лише HTTPS-адреси. Тому клієнти агрегатора використовують схему `https+http://` — «спершу HTTPS, якщо немає — HTTP» ([Program.cs#L68](../CargoDelivery.HttpAggregator/Program.cs#L68)).
 3. **Захист життєвого циклу:** Агрегатор не запускається до тих пір, поки всі три мікросервіси не піднімуть власні HTTP-слухачі та не дадуть відповідь `200 OK` на зонд `/health` (завдяки `.WithHttpHealthCheck` на кожному з них).
@@ -427,12 +427,12 @@ Aspire усуває людський фактор конфігурації. Та
 | :--- | :--- | :--- |
 | `.WithReference(rabbitmq)` | `ConnectionStrings__rabbitmq = amqp://guest:…@localhost:{порт}` | `configuration.GetConnectionString("rabbitmq")` — [MassTransitServiceExtension.cs#L36](../DriversManagement/src/DriversManagement/Extensions/Services/MassTransitServiceExtension.cs#L36) |
 | `.WithReference(driversDb, connectionName: "DriversManagement")` | `ConnectionStrings__DriversManagement = Server=…;Database=dev_driversmanagement;…` | `ConnectionStringOptions.DriversManagement` — [ConnectionStringOptions.cs](../DriversManagement/src/DriversManagement/Configurations/ConnectionStringOptions.cs) |
-| `.WithReference(cargoApi)` | `services__cargoorderingmanager__https__0 = https://localhost:5003` | `new Uri("https+http://cargoorderingmanager")` + `AddServiceDiscovery()` — [Program.cs#L71](../CargoDelivery.HttpAggregator/Program.cs#L71) |
+| `.WithReference(cargoApi)` | `services__orderingmanagement__https__0 = https://localhost:5003` | `new Uri("https+http://orderingmanagement")` + `AddServiceDiscovery()` — [Program.cs#L71](../CargoDelivery.HttpAggregator/Program.cs#L71) |
 | Автоматично для всіх проєктів | `OTEL_EXPORTER_OTLP_ENDPOINT`, `OTEL_EXPORTER_OTLP_HEADERS`, `OTEL_EXPORTER_OTLP_PROTOCOL` | `AddOpenTelemetryExporters()` у ServiceDefaults — [Extensions.cs#L185](../Aspire/CargoDelivery.ServiceDefaults/Extensions.cs#L185) |
 | Автоматично для кожного проєкту | `OTEL_SERVICE_NAME`, `OTEL_RESOURCE_ATTRIBUTES` | Встановлює унікальне ім'я вузла в трасуванні (`driversmanagement` тощо) |
 | Автоматично для кожного проєкту | `ASPNETCORE_URLS`, `ASPNETCORE_ENVIRONMENT=Development` | Kestrel слухає призначені порти; ендпоінти `/health` і `/alive` відкриті лише в Development |
 
-> 🧠 **Чому без `connectionName` нічого не працювало б?** За замовчуванням ключ рядка підключення дорівнює **імені ресурсу**: `.WithReference(driversDb)` дав би `ConnectionStrings__driversmanagement-db`. Сервіси ж Craftsman читають ключі `DriversManagement`, `DriversBlogManagement`, `CargoOrderingManager`. Параметр `connectionName` розв'язує ці дві речі: ім'я ресурсу лишається унікальним для Aspire, а ключ конфігурації — таким, як очікує сервіс.
+> 🧠 **Чому без `connectionName` нічого не працювало б?** За замовчуванням ключ рядка підключення дорівнює **імені ресурсу**: `.WithReference(driversDb)` дав би `ConnectionStrings__driversmanagement-db`. Сервіси ж Craftsman читають ключі `DriversManagement`, `BlogManagement`, `OrderingManagement`. Параметр `connectionName` розв'язує ці дві речі: ім'я ресурсу лишається унікальним для Aspire, а ключ конфігурації — таким, як очікує сервіс.
 
 > 🔁 **Пріоритет джерел конфігурації в ASP.NET Core:** змінні середовища **перекривають** `appsettings.json` і `appsettings.Development.json`. Тому, коли сервіс запущено через AppHost, «старі» рядки підключення з appsettings (наприклад, `localhost,1434`) ігноруються — працює контейнер Aspire. А при автономному запуску (`dotnet run` без AppHost) спрацьовує саме appsettings.
 
@@ -472,7 +472,7 @@ AppHost не запускає Docker напряму. Він передає оп�
 * при зупинці AppHost контейнери видаляються разом із даними.
 
 Звідси два наслідки, які пояснюють «дивну» поведінку з базами:
-1. **Схему треба створювати автоматично при кожному старті.** Це робить `MigrationHostedService` у кожному сервісі ([DriversManagement](../DriversManagement/src/DriversManagement/Databases/MigrationHostedService.cs#L48), [DriversBlogManagement](../DriversBlogManagement/src/DriversBlogManagement/Databases/MigrationHostedService.cs#L48), [CargoOrderingManager](../CargoOrderingManager/src/CargoOrderingManager/Databases/MigrationHostedService.cs#L48)): якщо у збірці є EF Core міграції — `MigrateAsync()`, якщо немає — `EnsureCreatedAsync()`.
+1. **Схему треба створювати автоматично при кожному старті.** Це робить `MigrationHostedService` у кожному сервісі ([DriversManagement](../DriversManagement/src/DriversManagement/Databases/MigrationHostedService.cs#L48), [BlogManagement](../BlogManagement/src/BlogManagement/Databases/MigrationHostedService.cs#L48), [OrderingManagement](../OrderingManagement/src/OrderingManagement/Databases/MigrationHostedService.cs#L48)): якщо у збірці є EF Core міграції — `MigrateAsync()`, якщо немає — `EnsureCreatedAsync()`.
 2. **Окремий локальний SQL Server (наприклад, контейнер `Sql-Server-2022` на порту 1433/1434) не використовується**, коли сервіси запущено через AppHost: змінні середовища від Aspire перекривають appsettings. Якщо раніше бази створювались у такому сервері через `EnsureCreated`, а потім код намагався застосувати міграції — виникала помилка `There is already an object named '...' in the database`. **Не змішуйте `EnsureCreated` і `Migrate` на одній базі.**
 
 | Хочу… | Як це зробити в AppHost |
@@ -491,8 +491,8 @@ sequenceDiagram
     autonumber
     participant DM as 🚚 DriversManagement (DemoDataSeeder)
     participant RMQ as 🐰 RabbitMQ (driver-created)
-    participant Blog as 📝 DriversBlogManagement (DemoDataSeeder)
-    participant Ord as 📦 CargoOrderingManager (DemoDataSeeder)
+    participant Blog as 📝 BlogManagement (DemoDataSeeder)
+    participant Ord as 📦 OrderingManagement (DemoDataSeeder)
 
     DM->>DM: Bogus("uk"): 50 водіїв + 30 компаній + 15 вантажівок → SaveChanges
     DM->>DM: Очікування, поки шина MassTransit стане Healthy
@@ -506,8 +506,8 @@ sequenceDiagram
 | Сервіс | Файл | Що створює |
 | :--- | :--- | :--- |
 | DriversManagement | [DemoDataSeeder.cs](../DriversManagement/src/DriversManagement/Databases/DemoDataSeeder.cs#L68) | 50 водіїв, компанії для 60% з них, 15 вантажівок; публікує `IDriverCreated` ([#L156](../DriversManagement/src/DriversManagement/Databases/DemoDataSeeder.cs#L156)) |
-| DriversBlogManagement | [DemoDataSeeder.cs](../DriversBlogManagement/src/DriversBlogManagement/Databases/DemoDataSeeder.cs#L54) | По одному посту («дорожній замітці») на кожного тіньового водія |
-| CargoOrderingManager | [DemoDataSeeder.cs](../CargoOrderingManager/src/CargoOrderingManager/Databases/DemoDataSeeder.cs#L50) | 50 замовлень із заповненими доставками, призначеними водіям |
+| BlogManagement | [DemoDataSeeder.cs](../BlogManagement/src/BlogManagement/Databases/DemoDataSeeder.cs#L54) | По одному посту («дорожній замітці») на кожного тіньового водія |
+| OrderingManagement | [DemoDataSeeder.cs](../OrderingManagement/src/OrderingManagement/Databases/DemoDataSeeder.cs#L50) | 50 замовлень із заповненими доставками, призначеними водіям |
 
 Важливі деталі реалізації:
 * **Фіксоване зерно Bogus** (`UseSeed(2026)`) — дані однакові від запуску до запуску (ті самі імена, номери посвідчень), але `Id` генеруються заново.
@@ -560,7 +560,7 @@ dotnet run --project "02-Microservices-Craftsman\Aspire\CargoDelivery.AppHost\Ca
 ### 🎯 Контрольні запитання:
 1. Чому `.WaitFor(projectResource)` без `.WithHttpHealthCheck(...)` гарантує лише запуск процесу, але не готовність сервісу? Що може піти не так у цей проміжок?
 2. Поясніть різницю між іменем ресурсу (`driversmanagement-db`), фізичною назвою БД (`dev_driversmanagement`) та `connectionName` (`DriversManagement`). Яка з них потрапляє в змінну середовища?
-3. Чому граф залежностей AppHost повинен бути ациклічним? Що станеться, якщо DriversManagement і DriversBlogManagement будуть чекати один на одного?
+3. Чому граф залежностей AppHost повинен бути ациклічним? Що станеться, якщо DriversManagement і BlogManagement будуть чекати один на одного?
 4. Чому при зупиненому через дашборд сервісі клієнт бачить таймаут, а не миттєве `Connection refused`?
 5. Які переваги і ризики дає `WithDataVolume()` для локальної розробки?
 

@@ -14,7 +14,7 @@
    Зв'язок між зовнішніми клієнтами (браузери, мобільні додатки) та бекендом. Тут домінує **REST HTTP/1.1 або HTTP/2 JSON**, тому що це загальновизнаний відкритий стандарт, зрозумілий фронтенд-розробникам і браузерним рушіям.
    
 2. **Внутрішнє API (East-West Traffic / Service-to-Service):**  
-   Зв'язок між сервісами всередині приватного кластера (наприклад, `DriversManagement ➔ DriversBlogManagement`). Використання тут текстового REST JSON є марнотратством обчислювальних ресурсів процесора та мережі. Внутрішня комунікація вимагає:
+   Зв'язок між сервісами всередині приватного кластера (наприклад, `DriversManagement ➔ BlogManagement`). Використання тут текстового REST JSON є марнотратством обчислювальних ресурсів процесора та мережі. Внутрішня комунікація вимагає:
    * **Мінімальної затримки (Low Latency).**
    * **Мінімального розміру корисного навантаження (Payload).**
    * **Суворої контрактної типізації**, яка перевіряється на етапі компіляції проекту.
@@ -87,7 +87,7 @@ traceparent: 00-…-01                     ← W3C TraceContext (OpenTelemetry)
 
 ### 4.4. Повна діаграма послідовності виклику (Sequence Diagram)
 
-Діаграма відображає наскрізний шлях запиту: від веб-клієнта, через MediatR у `DriversManagement`, до віддаленого gRPC-сервера `DriversBlogManagement`:
+Діаграма відображає наскрізний шлях запиту: від веб-клієнта, через MediatR у `DriversManagement`, до віддаленого gRPC-сервера `BlogManagement`:
 
 ```mermaid
 sequenceDiagram
@@ -151,14 +151,14 @@ flowchart TD
 
 Контракт є єдиним джерелом правди між двома мікросервісами. Файл містить розгорнуті українські коментарі про генерацію коду та правила еволюції.
 
-> 📍 **Шлях до файлу:** `DriversBlogManagement/src/DriversBlogManagement/Domain/Drivers/Protos/Driver.proto`
+> 📍 **Шлях до файлу:** `BlogManagement/src/BlogManagement/Domain/Drivers/Protos/Driver.proto`
 
-[👉 **Перейти до файлу (клікніть тут)**](../DriversBlogManagement/src/DriversBlogManagement/Domain/Drivers/Protos/Driver.proto)
+[👉 **Перейти до файлу (клікніть тут)**](../BlogManagement/src/BlogManagement/Domain/Drivers/Protos/Driver.proto)
 
 ```protobuf
 syntax = "proto3";
 
-option csharp_namespace = "DriversBlogManagement";
+option csharp_namespace = "BlogManagement";
 
 // Запит: отримати водія разом із його постами.
 // "= 1" — це НЕ значення за замовчуванням, а НОМЕР ПОЛЯ (тег) у бінарному форматі.
@@ -199,10 +199,10 @@ message PostAboutDriverResponse {
 #### Contract-first: як один `.proto` компілюється у двох сервісах
 | Сервіс | Рядок у `.csproj` | Що генерується |
 | :--- | :--- | :--- |
-| DriversBlogManagement (сервер) | `<Protobuf Include="Domain\Drivers\Protos\Driver.proto" GrpcServices="Both" />` — [csproj#L72](../DriversBlogManagement/src/DriversBlogManagement/DriversBlogManagement.csproj#L72) | Базовий клас `DriverRpc.DriverRpcBase` (+ клієнт) |
-| DriversManagement (клієнт) | `<Protobuf Include="..\..\..\DriversBlogManagement\...\Driver.proto" GrpcServices="Client" Link="Protos\Driver.proto" />` — [DriversManagement.csproj](../DriversManagement/src/DriversManagement/DriversManagement.csproj) | Лише `DriverRpc.DriverRpcClient` |
+| BlogManagement (сервер) | `<Protobuf Include="Domain\Drivers\Protos\Driver.proto" GrpcServices="Both" />` — [csproj#L72](../BlogManagement/src/BlogManagement/BlogManagement.csproj#L72) | Базовий клас `DriverRpc.DriverRpcBase` (+ клієнт) |
+| DriversManagement (клієнт) | `<Protobuf Include="..\..\..\BlogManagement\...\Driver.proto" GrpcServices="Client" Link="Protos\Driver.proto" />` — [DriversManagement.csproj](../DriversManagement/src/DriversManagement/DriversManagement.csproj) | Лише `DriverRpc.DriverRpcClient` |
 
-> 🐞 **Що було виправлено.** Раніше DriversManagement отримував згенеровані gRPC-типи через `ProjectReference` на **весь** проєкт DriversBlogManagement. Через це в процес DriversManagement потрапляли контролери блогу, і `GET /api/drivers` падав з `AmbiguousMatchException` (два `DriversController` з однаковим маршрутом). Тепер сервіси ділять лише контракт — класичний підхід **contract-first**.
+> 🐞 **Що було виправлено.** Раніше DriversManagement отримував згенеровані gRPC-типи через `ProjectReference` на **весь** проєкт BlogManagement. Через це в процес DriversManagement потрапляли контролери блогу, і `GET /api/drivers` падав з `AmbiguousMatchException` (два `DriversController` з однаковим маршрутом). Тепер сервіси ділять лише контракт — класичний підхід **contract-first**.
 
 ---
 
@@ -210,10 +210,10 @@ message PostAboutDriverResponse {
 
 Сервер реалізує абстрактний базовий клас `DriverRpc.DriverRpcBase`, згенерований пакетом `Grpc.Tools`:
 
-> 📍 **Шлях до файлу:** `DriversBlogManagement/src/DriversBlogManagement/Domain/Drivers/Services/DriverRpcService.cs` — залежність [#L34](../DriversBlogManagement/src/DriversBlogManagement/Domain/Drivers/Services/DriverRpcService.cs#L34), метод [#L57](../DriversBlogManagement/src/DriversBlogManagement/Domain/Drivers/Services/DriverRpcService.cs#L57), обробка помилок [#L97](../DriversBlogManagement/src/DriversBlogManagement/Domain/Drivers/Services/DriverRpcService.cs#L97)  
+> 📍 **Шлях до файлу:** `BlogManagement/src/BlogManagement/Domain/Drivers/Services/DriverRpcService.cs` — залежність [#L34](../BlogManagement/src/BlogManagement/Domain/Drivers/Services/DriverRpcService.cs#L34), метод [#L57](../BlogManagement/src/BlogManagement/Domain/Drivers/Services/DriverRpcService.cs#L57), обробка помилок [#L97](../BlogManagement/src/BlogManagement/Domain/Drivers/Services/DriverRpcService.cs#L97)  
 > 📝 *У файлі наведено докладні покрокові коментарі українською мовою.*
 
-[👉 **Перейти до файлу (клікніть тут)**](../DriversBlogManagement/src/DriversBlogManagement/Domain/Drivers/Services/DriverRpcService.cs#L57)
+[👉 **Перейти до файлу (клікніть тут)**](../BlogManagement/src/BlogManagement/Domain/Drivers/Services/DriverRpcService.cs#L57)
 
 Фрагмент реалізації методу:
 ```csharp
@@ -280,12 +280,12 @@ public class DriverRpcService : DriverRpc.DriverRpcBase
 | `DeadlineExceeded (4)` | Вичерпано deadline клієнта | ⚠️ Обережно |
 | `Internal (13)` / `Unknown (2)` | Необроблений виняток на сервері | ❌ Як правило, ні |
 
-Реєстрація сервісу у конвеєрі маршрутизації `DriversBlogManagement` ([Program.cs#L39](../DriversBlogManagement/src/DriversBlogManagement/Program.cs#L39)):
+Реєстрація сервісу у конвеєрі маршрутизації `BlogManagement` ([Program.cs#L39](../BlogManagement/src/BlogManagement/Program.cs#L39)):
 ```csharp
-// Program.cs у DriversBlogManagement:
+// Program.cs у BlogManagement:
 app.MapGrpcService<DriverRpcService>();
 ```
-і `builder.Services.AddGrpc(o => o.EnableDetailedErrors = true)` у [WebAppServiceConfiguration.cs#L47](../DriversBlogManagement/src/DriversBlogManagement/Extensions/Services/WebAppServiceConfiguration.cs#L47). `EnableDetailedErrors` передає текст винятку клієнту — зручно в розробці, але в продакшні це витік внутрішніх деталей.
+і `builder.Services.AddGrpc(o => o.EnableDetailedErrors = true)` у [WebAppServiceConfiguration.cs#L47](../BlogManagement/src/BlogManagement/Extensions/Services/WebAppServiceConfiguration.cs#L47). `EnableDetailedErrors` передає текст винятку клієнту — зручно в розробці, але в продакшні це витік внутрішніх деталей.
 
 ---
 
@@ -301,9 +301,9 @@ app.MapGrpcService<DriverRpcService>();
 builder.Services.AddGrpcClient<DriverRpc.DriverRpcClient>(options =>
 {
     // Під Aspire: логічне ім'я (резолвить Service Discovery зі змінної
-    // services__driversblogmanagement__https__0). Без Aspire: GrpcServer:Address з appsettings.
-    var grpcAddress = builder.Configuration["services:driversblogmanagement:https:0"] is not null
-        ? "https://driversblogmanagement"
+    // services__blogmanagement__https__0). Без Aspire: GrpcServer:Address з appsettings.
+    var grpcAddress = builder.Configuration["services:blogmanagement:https:0"] is not null
+        ? "https://blogmanagement"
         : builder.Configuration.GetSection("GrpcServer")["Address"] ?? "https://localhost:5002";
 
     options.Address = new Uri(grpcAddress);
@@ -387,11 +387,11 @@ catch (RpcException)
 ## 7. Швидка навігація по вихідному коду
 
 * 📜 **Контракт Protocol Buffers:**
-  * [👉 **Перейти до Driver.proto**](../DriversBlogManagement/src/DriversBlogManagement/Domain/Drivers/Protos/Driver.proto)
-* ⚡ **Сервер gRPC (DriversBlogManagement):**
-  * [👉 **Перейти до DriverRpcService.cs**](../DriversBlogManagement/src/DriversBlogManagement/Domain/Drivers/Services/DriverRpcService.cs#L57)
-  * [👉 **Перейти до DriverRepository.GetDriverWithPosts**](../DriversBlogManagement/src/DriversBlogManagement/Domain/Drivers/Services/DriverRepository.cs#L24)
-  * [👉 **Реєстрація: Program.cs (MapGrpcService)**](../DriversBlogManagement/src/DriversBlogManagement/Program.cs#L39)
+  * [👉 **Перейти до Driver.proto**](../BlogManagement/src/BlogManagement/Domain/Drivers/Protos/Driver.proto)
+* ⚡ **Сервер gRPC (BlogManagement):**
+  * [👉 **Перейти до DriverRpcService.cs**](../BlogManagement/src/BlogManagement/Domain/Drivers/Services/DriverRpcService.cs#L57)
+  * [👉 **Перейти до DriverRepository.GetDriverWithPosts**](../BlogManagement/src/BlogManagement/Domain/Drivers/Services/DriverRepository.cs#L24)
+  * [👉 **Реєстрація: Program.cs (MapGrpcService)**](../BlogManagement/src/BlogManagement/Program.cs#L39)
 * 🔌 **Клієнт gRPC (DriversManagement):**
   * [👉 **Перейти до WebAppServiceConfiguration.cs (Реєстрація)**](../DriversManagement/src/DriversManagement/Extensions/Services/WebAppServiceConfiguration.cs#L58)
   * [👉 **Перейти до GetDriver.cs (Виклик з Graceful Degradation)**](../DriversManagement/src/DriversManagement/Domain/Drivers/Features/GetDriver.cs#L93)

@@ -26,7 +26,7 @@ using SharedKernel.Messages;
 /// ЧОМУ ПОДІЇ, А НЕ СІДИНГ У КОЖНОМУ СЕРВІСІ ОКРЕМО?
 /// DriversManagement — єдине джерело правди про водіїв. Для кожного створеного водія
 /// публікується IDriverCreated → RabbitMQ (Fanout) → тіньові копії з'являються в
-/// DriversBlogManagement та CargoOrderingManager ТИМИ САМИМИ Id. Тобто сідинг сам є
+/// BlogManagement та OrderingManagement ТИМИ САМИМИ Id. Тобто сідинг сам є
 /// живою демонстрацією Event-Driven реплікації (видно в Aspire Dashboard → Traces).
 ///
 /// БЕЗПЕКА ПОВТОРНОГО ЗАПУСКУ:

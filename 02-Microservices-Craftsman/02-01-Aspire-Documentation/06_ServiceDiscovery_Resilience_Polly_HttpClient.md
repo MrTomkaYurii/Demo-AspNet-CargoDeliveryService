@@ -63,7 +63,7 @@ flowchart TD
 | **Точка відмови (SPOF)** | Якщо проксі перевантажений, падає зв'язок між усіма сервісами | Немає єдиної точки відмови для передачі даних |
 | **Складність клієнта** | Клієнт простий (звичайний HTTP-виклик) | Клієнт повинен мати бібліотеку резолвінгу адрес |
 
-> 💡 **Зауваження про Kubernetes.** У k8s DNS-ім'я сервісу (`cargoorderingmanager.default.svc`) уже є server-side discovery через `kube-proxy`. Бібліотека `Microsoft.Extensions.ServiceDiscovery` вміє працювати і там (провайдер DNS SRV), тому код клієнта з логічним ім'ям однаковий локально в Aspire і в кластері.
+> 💡 **Зауваження про Kubernetes.** У k8s DNS-ім'я сервісу (`orderingmanagement.default.svc`) уже є server-side discovery через `kube-proxy`. Бібліотека `Microsoft.Extensions.ServiceDiscovery` вміє працювати і там (провайдер DNS SRV), тому код клієнта з логічним ім'ям однаковий локально в Aspire і в кластері.
 
 > ⚠️ **Нюанс локального Aspire.** Порти наших проєктів фіксовані в `launchSettings.json` (5001–5003, 57390), а DCP ставить перед кожним проєктом **проксі**. Тому навіть з Service Discovery в адресах ви бачите стабільні `https://localhost:500x` — динамічні порти отримують лише контейнери (RabbitMQ, SQL Server).
 
@@ -465,7 +465,7 @@ for (var call = 1; call <= 5; call++)
 
 ```csharp
 builder.Services.AddHttpClient<IDriverBlogApiClient, DriverBlogApiClient>(client =>
-        client.BaseAddress = new Uri("https+http://driversblogmanagement"))
+        client.BaseAddress = new Uri("https+http://blogmanagement"))
     .RemoveAllResilienceHandlers()
     .AddStandardResilienceHandler(options =>
     {
@@ -544,4 +544,4 @@ builder.Services.AddHttpClient<ICriticalPaymentClient, CriticalPaymentClient>()
 3. Виконайте `GET /api/v1/resilience-demo/timeout` і переконайтеся, що контролер повернув `TimeoutHandled` приблизно через 8 с. Знайдіть у *Structured logs* події `OnTimeout`.
 4. Виконайте `GET /api/v1/resilience-demo/circuit-breaker` двічі поспіль, потім ще раз через 15 с. Поясніть різницю результатів.
 5. У [Program.cs#L106](../CargoDelivery.HttpAggregator/Program.cs#L106) змініть для сценарію Retry `MaxRetryAttempts` на 1 і повторіть експеримент 2 — чому тепер повертається `Exhausted`?
-6. Зупиніть `driversblogmanagement` у дашборді та порівняйте час відповіді `GET /api/v1/shipment-summary/{id}` з поточним коротким бюджетом і з тимчасово видаленим блоком `.RemoveAllResilienceHandlers().AddStandardResilienceHandler(...)` для клієнта блогу.
+6. Зупиніть `blogmanagement` у дашборді та порівняйте час відповіді `GET /api/v1/shipment-summary/{id}` з поточним коротким бюджетом і з тимчасово видаленим блоком `.RemoveAllResilienceHandlers().AddStandardResilienceHandler(...)` для клієнта блогу.

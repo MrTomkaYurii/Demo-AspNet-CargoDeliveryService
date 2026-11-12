@@ -1,4 +1,4 @@
-﻿using Duende.IdentityServer.Models;
+using Duende.IdentityServer.Models;
 
 namespace DuendeIdentityInMemory
 {
@@ -21,8 +21,8 @@ namespace DuendeIdentityInMemory
 
                 // Craftsman Microservices scopes
                 new ApiScope("drivers_management", "DriversManagement Microservice API"),
-                new ApiScope("cargo_ordering", "CargoOrderingManager Microservice API"),
-                new ApiScope("blog_management", "DriversBlogManagement Microservice API"),
+                new ApiScope("cargo_ordering", "OrderingManagement Microservice API"),
+                new ApiScope("blog_management", "BlogManagement Microservice API"),
             };
 
         public static IEnumerable<ApiResource> ApiResources => new[]

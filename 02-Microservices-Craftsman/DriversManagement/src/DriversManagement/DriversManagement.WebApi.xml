@@ -362,7 +362,7 @@
              ЧОМУ ПОДІЇ, А НЕ СІДИНГ У КОЖНОМУ СЕРВІСІ ОКРЕМО?
              DriversManagement — єдине джерело правди про водіїв. Для кожного створеного водія
              публікується IDriverCreated → RabbitMQ (Fanout) → тіньові копії з'являються в
-             DriversBlogManagement та CargoOrderingManager ТИМИ САМИМИ Id. Тобто сідинг сам є
+             BlogManagement та OrderingManagement ТИМИ САМИМИ Id. Тобто сідинг сам є
              живою демонстрацією Event-Driven реплікації (видно в Aspire Dashboard → Traces).
             
              БЕЗПЕКА ПОВТОРНОГО ЗАПУСКУ:
@@ -460,8 +460,8 @@
             Зведена DTO-модель для аналітичної панелі водія (Патерн Gateway Aggregator / BFF).
             Об'єднує дані з трьох незалежних мікросервісів:
             1. DriversManagement (локальна база: профіль водія, компанія, закріплене авто)
-            2. CargoOrderingManager (зовнішній HTTP REST: активні рейси та доставки)
-            3. DriversBlogManagement (зовнішній HTTP REST / gRPC: останні публікації та активність)
+            2. OrderingManagement (зовнішній HTTP REST: активні рейси та доставки)
+            3. BlogManagement (зовнішній HTTP REST / gRPC: останні публікації та активність)
             </summary>
         </member>
         <member name="P:DriversManagement.Domain.Drivers.Dtos.AggregatedDriverDashboardDto.DriverId">
@@ -491,12 +491,12 @@
         </member>
         <member name="P:DriversManagement.Domain.Drivers.Dtos.AggregatedDriverDashboardDto.ActiveDeliveries">
             <summary>
-            Список активних доставок із CargoOrderingManager (отримано через HTTP Client).
+            Список активних доставок із OrderingManagement (отримано через HTTP Client).
             </summary>
         </member>
         <member name="P:DriversManagement.Domain.Drivers.Dtos.AggregatedDriverDashboardDto.RecentBlogPosts">
             <summary>
-            Останні публікації водія у блозі з DriversBlogManagement (отримано через HTTP Client).
+            Останні публікації водія у блозі з BlogManagement (отримано через HTTP Client).
             </summary>
         </member>
         <member name="P:DriversManagement.Domain.Drivers.Dtos.AggregatedDriverDashboardDto.IsPartialData">
@@ -519,11 +519,11 @@
             <summary>
             Власна (локальна) модель поста про водія у Bounded Context DriversManagement.
             <para>
-            Дані надходять із DriversBlogManagement через gRPC (повідомлення PostAboutDriverResponse
+            Дані надходять із BlogManagement через gRPC (повідомлення PostAboutDriverResponse
             з контракту Driver.proto) і мапляться в цей DTO у <c>GetDriver.Handler</c>.
             </para>
             <para>
-            Чому не перевикористати DTO з DriversBlogManagement? Тому що мікросервіси не повинні
+            Чому не перевикористати DTO з BlogManagement? Тому що мікросервіси не повинні
             ділити між собою внутрішні класи: спільним є лише контракт (.proto). Так кожен сервіс
             може змінювати власні моделі незалежно, не ламаючи сусідів.
             </para>
@@ -545,7 +545,7 @@
                   Вимагає, щоб видавець знав точну чергу отримувача (жорсткий зв'язок).
                 - Publish (Publish/Subscribe): публікує подію в Fanout Exchange (SharedKernel.Messages:IDriverCreated).
                   RabbitMQ автоматично робить копію повідомлення для ВСІХ черг сервісів,
-                  які підписалися на цей контракт (DriversBlogManagement, CargoOrderingManager, тощо).
+                  які підписалися на цей контракт (BlogManagement, OrderingManagement, тощо).
                   Видавець взагалі не знає, хто саме і скільки споживачів слухають цю подію!
             
              3. ПОСЛІДОВНІСТЬ: СПОЧАТКУ БАЗА ДАНИХ, ПОТІМ ШИНА (ACID + EVENTUAL CONSISTENCY):
@@ -581,7 +581,7 @@
              1. ПРИЗНАЧЕННЯ:
                 Цей CQRS-обробник зчитує картку водія з локальної бази даних DriversManagement DB
                 та робить СИНХРОННИЙ БІНАРНИЙ виклик по протоколу HTTP/2 через gRPC до віддаленого
-                мікросервісу DriversBlogManagement для отримання його публікацій.
+                мікросервісу BlogManagement для отримання його публікацій.
             
              2. ЧОМУ ТУТ ВИКОРИСТОВУЄТЬСЯ gRPC ЗАМІСТЬ ЗВИЧАЙНОГО REST HTTP?
                 - Висока продуктивність: gRPC використовує постійний HTTP/2 мультиплексований канал,
@@ -602,7 +602,7 @@
              4. SERVICE DISCOVERY В .NET ASPIRE:
                 Клієнт зареєстрований у WebAppServiceConfiguration.cs через AddGrpcClient(...).
                 Адресація автоматично транслюється на запущений контейнер або процес
-                через ім'я "driversblogmanagement".
+                через ім'я "blogmanagement".
              ====================================================================================
              </summary>
         </member>
@@ -633,8 +633,8 @@
                 Замість того, щоб клієнтський додаток (веб-портал, мобільний застосунок або WPF)
                 виконував 3 окремих мережевих виклики через інтернет:
                   - GET /api/v1/drivers/{id} (до DriversManagement)
-                  - GET /api/v1/deliveries (до CargoOrderingManager)
-                  - GET /api/v1/postaboutdrivers (до DriversBlogManagement)
+                  - GET /api/v1/deliveries (до OrderingManagement)
+                  - GET /api/v1/postaboutdrivers (до BlogManagement)
                 Клієнт робить ОДИН легкий запит:
                   -> GET /api/v1/driver-dashboard/{id}
              
@@ -689,8 +689,8 @@
                Публікуємо SharedKernel.Messages.IDriverUpdated через IPublishEndpoint.
                MassTransit спрямовує повідомлення у RabbitMQ Fanout Exchange 'driver-updated',
                який миттєво дублює його у черги:
-                 - sync-updated-driver (DriversBlogManagement)
-                 - ordering-sync-driver (CargoOrderingManager)
+                 - sync-updated-driver (BlogManagement)
+                 - ordering-sync-driver (OrderingManagement)
             4. EVENTUAL CONSISTENCY (Кінцева узгодженість):
                Всі сервіси отримують новий стан водія асинхронно, без блокування клієнтського запиту.
             ====================================================================================
@@ -711,9 +711,9 @@
                 HttpMessageHandler, уникаючи витоків ресурсів.
             
              2. ЗВІДКИ БЕРЕТЬСЯ АДРЕСА СЕРВІСУ (SERVICE DISCOVERY)?
-                У Program.cs встановлюється: client.BaseAddress = new Uri("http://cargoorderingmanager");
+                У Program.cs встановлюється: client.BaseAddress = new Uri("http://orderingmanagement");
                 У середовищі .NET Aspire компонент Service Discovery автоматично перехоплює це
-                логічне ім'я "cargoorderingmanager" і підставляє реальний IP-порт запущеного контейнера
+                логічне ім'я "orderingmanagement" і підставляє реальний IP-порт запущеного контейнера
                 чи локального процесу (наприклад, http://localhost:5241).
             
              3. СТІЙКІСТЬ ЧЕРЕЗ POLLY (.AddStandardResilienceHandler):
@@ -731,7 +731,7 @@
         </member>
         <member name="M:DriversManagement.Domain.Drivers.Services.Http.CargoOrderingApiClient.GetActiveDeliveriesByDriverAsync(System.Guid,System.Threading.CancellationToken)">
             <summary>
-            Виконує GET-запит до ендпоінту доставок у CargoOrderingManager.
+            Виконує GET-запит до ендпоінту доставок у OrderingManagement.
             </summary>
         </member>
         <member name="T:DriversManagement.Domain.Drivers.Services.Http.DriversBlogApiClient">
@@ -742,7 +742,7 @@
              АРХІТЕКТУРНІ ОСОБЛИВОСТІ:
             
              1. ВЗАЄМОДІЯ З СЕРВІСОМ ЧЕРЕЗ .NET ASPIRE SERVICE DISCOVERY:
-                Адресація сервісу налаштовується як "http://driversblogmanagement".
+                Адресація сервісу налаштовується як "http://blogmanagement".
                 У продакшені або при тестуванні в Aspire AppHost ім'я автоматично мапиться
                 на внутрішню адресу відповідного контейнера/процесу.
             
@@ -770,7 +770,7 @@
              ------------------------------------------------------------------------------------
              ПРИЗНАЧЕННЯ:
              Інтерфейс клієнта для виконання синхронних HTTP REST-запитів до мікросервісу
-             замовлень вантажів (CargoOrderingManager).
+             замовлень вантажів (OrderingManagement).
             
              ЧОМУ ВИКОРИСТОВУЄТЬСЯ ІНТЕРФЕЙС ТА ТИПІЗОВАНИЙ КЛІЄНТ?
              1. Принцип інверсії залежностей (DIP з SOLID):
@@ -798,7 +798,7 @@
              ------------------------------------------------------------------------------------
              ПРИЗНАЧЕННЯ:
              Абстракція для виконання синхронних HTTP REST-запитів до мікросервісу блогів водіїв
-             (DriversBlogManagement) в рамках патерну Gateway Aggregator / BFF.
+             (BlogManagement) в рамках патерну Gateway Aggregator / BFF.
             
              ЧОМУ МИ СТВОРЮЄМО ОКРЕМИЙ КЛІЄНТ ДЛЯ КОЖНОГО МІКРОСЕРВІСУ?
              1. Принцип єдиної відповідальності (SRP):
@@ -864,7 +864,7 @@
                 Явно задає коротке ім'я обмінника замість повного імені типу.
              2. ExchangeType = ExchangeType.Fanout:
                 Обмінник транслює повідомлення про зміну водія всім підписаним сервісам
-                (DriversBlogManagement, CargoOrderingManager тощо) паралельно.
+                (BlogManagement, OrderingManagement тощо) паралельно.
              ====================================================================================
              </summary>
         </member>
@@ -922,90 +922,90 @@
              ====================================================================================
              </summary>
         </member>
-        <member name="T:DriversBlogManagement.DriverReflection">
+        <member name="T:BlogManagement.DriverReflection">
             <summary>Holder for reflection information generated from Driver.proto</summary>
         </member>
-        <member name="P:DriversBlogManagement.DriverReflection.Descriptor">
+        <member name="P:BlogManagement.DriverReflection.Descriptor">
             <summary>File descriptor for Driver.proto</summary>
         </member>
-        <member name="T:DriversBlogManagement.DriverWithPostsRequest">
+        <member name="T:BlogManagement.DriverWithPostsRequest">
             <summary>
             Запит: отримати водія разом із його постами.
             "= 1" — це НЕ значення за замовчуванням, а НОМЕР ПОЛЯ (тег) у бінарному форматі.
             </summary>
         </member>
-        <member name="F:DriversBlogManagement.DriverWithPostsRequest.DriverIdFieldNumber">
+        <member name="F:BlogManagement.DriverWithPostsRequest.DriverIdFieldNumber">
             <summary>Field number for the "driver_id" field.</summary>
         </member>
-        <member name="P:DriversBlogManagement.DriverWithPostsRequest.DriverId">
+        <member name="P:BlogManagement.DriverWithPostsRequest.DriverId">
             <summary>
             GUID водія у вигляді рядка (у Protobuf немає вбудованого типу Guid)
             </summary>
         </member>
-        <member name="T:DriversBlogManagement.DriverWithPostsResponse">
+        <member name="T:BlogManagement.DriverWithPostsResponse">
             <summary>
             Відповідь: водій та колекція його постів
             </summary>
         </member>
-        <member name="F:DriversBlogManagement.DriverWithPostsResponse.DriverIdFieldNumber">
+        <member name="F:BlogManagement.DriverWithPostsResponse.DriverIdFieldNumber">
             <summary>Field number for the "driver_id" field.</summary>
         </member>
-        <member name="F:DriversBlogManagement.DriverWithPostsResponse.FirstNameFieldNumber">
+        <member name="F:BlogManagement.DriverWithPostsResponse.FirstNameFieldNumber">
             <summary>Field number for the "first_name" field.</summary>
         </member>
-        <member name="F:DriversBlogManagement.DriverWithPostsResponse.LastNameFieldNumber">
+        <member name="F:BlogManagement.DriverWithPostsResponse.LastNameFieldNumber">
             <summary>Field number for the "last_name" field.</summary>
         </member>
-        <member name="F:DriversBlogManagement.DriverWithPostsResponse.PostsFieldNumber">
+        <member name="F:BlogManagement.DriverWithPostsResponse.PostsFieldNumber">
             <summary>Field number for the "posts" field.</summary>
         </member>
-        <member name="P:DriversBlogManagement.DriverWithPostsResponse.Posts">
+        <member name="P:BlogManagement.DriverWithPostsResponse.Posts">
             <summary>
             repeated = список (у C# — RepeatedField&lt;T>)
             </summary>
         </member>
-        <member name="T:DriversBlogManagement.PostAboutDriverResponse">
+        <member name="T:BlogManagement.PostAboutDriverResponse">
             <summary>
             Один пост про водія
             </summary>
         </member>
-        <member name="F:DriversBlogManagement.PostAboutDriverResponse.IdFieldNumber">
+        <member name="F:BlogManagement.PostAboutDriverResponse.IdFieldNumber">
             <summary>Field number for the "id" field.</summary>
         </member>
-        <member name="F:DriversBlogManagement.PostAboutDriverResponse.TitleFieldNumber">
+        <member name="F:BlogManagement.PostAboutDriverResponse.TitleFieldNumber">
             <summary>Field number for the "title" field.</summary>
         </member>
-        <member name="F:DriversBlogManagement.PostAboutDriverResponse.ContentFieldNumber">
+        <member name="F:BlogManagement.PostAboutDriverResponse.ContentFieldNumber">
             <summary>Field number for the "content" field.</summary>
         </member>
-        <member name="T:DriversBlogManagement.DriverRpc">
+        <member name="T:BlogManagement.DriverRpc">
             <summary>
             Опис gRPC-сервісу: одна унарна (запит → відповідь) віддалена процедура.
             На транспорті це HTTP/2 POST на шлях /DriverRpc/GetDriverWithPosts.
             </summary>
         </member>
-        <member name="P:DriversBlogManagement.DriverRpc.Descriptor">
+        <member name="P:BlogManagement.DriverRpc.Descriptor">
             <summary>Service descriptor</summary>
         </member>
-        <member name="T:DriversBlogManagement.DriverRpc.DriverRpcClient">
+        <member name="T:BlogManagement.DriverRpc.DriverRpcClient">
             <summary>Client for DriverRpc</summary>
         </member>
-        <member name="M:DriversBlogManagement.DriverRpc.DriverRpcClient.#ctor(Grpc.Core.ChannelBase)">
+        <member name="M:BlogManagement.DriverRpc.DriverRpcClient.#ctor(Grpc.Core.ChannelBase)">
             <summary>Creates a new client for DriverRpc</summary>
             <param name="channel">The channel to use to make remote calls.</param>
         </member>
-        <member name="M:DriversBlogManagement.DriverRpc.DriverRpcClient.#ctor(Grpc.Core.CallInvoker)">
+        <member name="M:BlogManagement.DriverRpc.DriverRpcClient.#ctor(Grpc.Core.CallInvoker)">
             <summary>Creates a new client for DriverRpc that uses a custom <c>CallInvoker</c>.</summary>
             <param name="callInvoker">The callInvoker to use to make remote calls.</param>
         </member>
-        <member name="M:DriversBlogManagement.DriverRpc.DriverRpcClient.#ctor">
+        <member name="M:BlogManagement.DriverRpc.DriverRpcClient.#ctor">
             <summary>Protected parameterless constructor to allow creation of test doubles.</summary>
         </member>
-        <member name="M:DriversBlogManagement.DriverRpc.DriverRpcClient.#ctor(Grpc.Core.ClientBase.ClientBaseConfiguration)">
+        <member name="M:BlogManagement.DriverRpc.DriverRpcClient.#ctor(Grpc.Core.ClientBase.ClientBaseConfiguration)">
             <summary>Protected constructor to allow creation of configured clients.</summary>
             <param name="configuration">The client configuration.</param>
         </member>
-        <member name="M:DriversBlogManagement.DriverRpc.DriverRpcClient.GetDriverWithPosts(DriversBlogManagement.DriverWithPostsRequest,Grpc.Core.Metadata,System.Nullable{System.DateTime},System.Threading.CancellationToken)">
+        <member name="M:BlogManagement.DriverRpc.DriverRpcClient.GetDriverWithPosts(BlogManagement.DriverWithPostsRequest,Grpc.Core.Metadata,System.Nullable{System.DateTime},System.Threading.CancellationToken)">
             <summary>
             Повертає дані водія з локальної (тіньової) копії блогу та його пости
             </summary>
@@ -1015,7 +1015,7 @@
             <param name="cancellationToken">An optional token for canceling the call.</param>
             <returns>The response received from the server.</returns>
         </member>
-        <member name="M:DriversBlogManagement.DriverRpc.DriverRpcClient.GetDriverWithPosts(DriversBlogManagement.DriverWithPostsRequest,Grpc.Core.CallOptions)">
+        <member name="M:BlogManagement.DriverRpc.DriverRpcClient.GetDriverWithPosts(BlogManagement.DriverWithPostsRequest,Grpc.Core.CallOptions)">
             <summary>
             Повертає дані водія з локальної (тіньової) копії блогу та його пости
             </summary>
@@ -1023,7 +1023,7 @@
             <param name="options">The options for the call.</param>
             <returns>The response received from the server.</returns>
         </member>
-        <member name="M:DriversBlogManagement.DriverRpc.DriverRpcClient.GetDriverWithPostsAsync(DriversBlogManagement.DriverWithPostsRequest,Grpc.Core.Metadata,System.Nullable{System.DateTime},System.Threading.CancellationToken)">
+        <member name="M:BlogManagement.DriverRpc.DriverRpcClient.GetDriverWithPostsAsync(BlogManagement.DriverWithPostsRequest,Grpc.Core.Metadata,System.Nullable{System.DateTime},System.Threading.CancellationToken)">
             <summary>
             Повертає дані водія з локальної (тіньової) копії блогу та його пости
             </summary>
@@ -1033,7 +1033,7 @@
             <param name="cancellationToken">An optional token for canceling the call.</param>
             <returns>The call object.</returns>
         </member>
-        <member name="M:DriversBlogManagement.DriverRpc.DriverRpcClient.GetDriverWithPostsAsync(DriversBlogManagement.DriverWithPostsRequest,Grpc.Core.CallOptions)">
+        <member name="M:BlogManagement.DriverRpc.DriverRpcClient.GetDriverWithPostsAsync(BlogManagement.DriverWithPostsRequest,Grpc.Core.CallOptions)">
             <summary>
             Повертає дані водія з локальної (тіньової) копії блогу та його пости
             </summary>
@@ -1041,7 +1041,7 @@
             <param name="options">The options for the call.</param>
             <returns>The call object.</returns>
         </member>
-        <member name="M:DriversBlogManagement.DriverRpc.DriverRpcClient.NewInstance(Grpc.Core.ClientBase.ClientBaseConfiguration)">
+        <member name="M:BlogManagement.DriverRpc.DriverRpcClient.NewInstance(Grpc.Core.ClientBase.ClientBaseConfiguration)">
             <summary>Creates a new instance of client from given <c>ClientBaseConfiguration</c>.</summary>
         </member>
     </members>

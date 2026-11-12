@@ -38,12 +38,12 @@
 flowchart TD
     User["👤 Диспетчер"] -->|"HTTP GET"| Agg["🛡️ HttpAggregator"]
     Agg -->|"HTTP GET"| DM["🚚 DriversManagement"]
-    Agg -->|"HTTP GET"| CO["📦 CargoOrderingManager"]
-    Agg -->|"HTTP GET"| DB["📝 DriversBlogManagement"]
+    Agg -->|"HTTP GET"| CO["📦 OrderingManagement"]
+    Agg -->|"HTTP GET"| DB["📝 BlogManagement"]
     
     DM -->|"SQL SELECT"| SQL1[("💾 SQL Server: dev_driversmanagement")]
-    CO -->|"SQL SELECT"| SQL2[("💾 SQL Server: dev_cargoorderingmanager")]
-    DB -->|"SQL SELECT"| SQL3[("💾 SQL Server: dev_driversblogmanagement")]
+    CO -->|"SQL SELECT"| SQL2[("💾 SQL Server: dev_orderingmanagement")]
+    DB -->|"SQL SELECT"| SQL3[("💾 SQL Server: dev_blogmanagement")]
     
     DM -.->|"AMQP Publish"| RMQ["🐰 RabbitMQ"]
     RMQ -.->|"AMQP Consume"| DB
@@ -99,12 +99,12 @@ graph TD
     S1 --> S1s["Server: DriversManagement<br/>GET api/internal/drivers/{id:guid}"]
     S1s --> S1_1["💾 Client: SQL SELECT drivers<br/>(SqlClient instrumentation)"]
     
-    Root --> S2["📦 Client: GET → cargoorderingmanager<br/>api/internal/deliveries"]
-    S2 --> S2s["Server: CargoOrderingManager"]
+    Root --> S2["📦 Client: GET → orderingmanagement<br/>api/internal/deliveries"]
+    S2 --> S2s["Server: OrderingManagement"]
     S2s --> S2_1["💾 Client: SQL SELECT deliveries"]
     
-    Root --> S3["📝 Client: GET → driversblogmanagement<br/>api/internal/postaboutdrivers"]
-    S3 --> S3s["Server: DriversBlogManagement"]
+    Root --> S3["📝 Client: GET → blogmanagement<br/>api/internal/postaboutdrivers"]
+    S3 --> S3s["Server: BlogManagement"]
     S3s --> S3_1["💾 Client: SQL SELECT post_about_drivers"]
 
     style Root fill:#e6f7ff,stroke:#1890ff,stroke-width:2px;
@@ -263,12 +263,12 @@ gantt
     SQL SELECT drivers                                    :active, dm_sql, 11, 23
 
     section CargoOrdering
-    Client GET cargoorderingmanager                       :active, co_http, 32, 78
+    Client GET orderingmanagement                       :active, co_http, 32, 78
     Server GET api/internal/deliveries                    :active, co_srv, 34, 76
     SQL SELECT deliveries                                 :active, co_sql, 38, 70
 
     section DriversBlog
-    Client GET driversblogmanagement                      :active, db_http, 32, 64
+    Client GET blogmanagement                      :active, db_http, 32, 64
     Server GET api/internal/postaboutdrivers              :active, db_srv, 34, 62
     SQL SELECT post_about_drivers                         :active, db_sql, 37, 56
 ```
@@ -288,13 +288,13 @@ gantt
 Трасування OpenTelemetry у поєднанні з Aspire Dashboard дає унікальну можливість наочно побачити, як система поводиться під час відмов.
 
 ### Сценарій 1: Частковий збій та Graceful Degradation
-Припустимо, мікросервіс `DriversBlogManagement` зупинено (кнопка ■ у дашборді) або він повертає помилку 503.
+Припустимо, мікросервіс `BlogManagement` зупинено (кнопка ■ у дашборді) або він повертає помилку 503.
 
 ```mermaid
 sequenceDiagram
     autonumber
     participant Agg as 🛡️ HttpAggregator
-    participant DB as 📝 DriversBlogManagement
+    participant DB as 📝 BlogManagement
 
     Agg->>DB: GET api/internal/postaboutdrivers (спроба 1)
     Note over Agg,DB: Немає відповіді 1 с → AttemptTimeout
@@ -306,7 +306,7 @@ sequenceDiagram
 ```
 
 #### Відображення в дашборді:
-* Клієнтські спани виклику до `DriversBlogManagement` позначаються як **помилкові** (червоні) — по одному спану на **кожну спробу** Polly.
+* Клієнтські спани виклику до `BlogManagement` позначаються як **помилкові** (червоні) — по одному спану на **кожну спробу** Polly.
 * Клік по спану розгортає атрибути: `error.type`, `http.response.status_code = 503` (якщо сервер відповів) або тип винятку таймауту.
 * **АЛЕ кореневий спан `HttpAggregator` залишається успішним (`200 OK`)!**
 * Це наочно доводить працездатність нашого захисного коду: аварія другорядного сервісу локалізована, а користувач отримав валідну зведену сторінку рейсу.
@@ -362,8 +362,8 @@ sequenceDiagram
     actor User as 👤 Користувач
     participant DM as 🚚 DriversManagement (Producer)
     participant RMQ as 🐰 RabbitMQ (Broker)
-    participant DB as 📝 DriversBlogManagement (Consumer)
-    participant CO as 📦 CargoOrderingManager (Consumer)
+    participant DB as 📝 BlogManagement (Consumer)
+    participant CO as 📦 OrderingManagement (Consumer)
 
     User->>DM: POST /api/drivers (новий TraceId)
     Note over DM: Span Server "POST api/drivers" → SQL INSERT
@@ -382,8 +382,8 @@ sequenceDiagram
 | :--- | :--- | :--- |
 | `POST api/drivers` | driversmanagement | 0.52 с |
 | `send driver-created` | driversmanagement | 99 мс |
-| `ordering-sync-driver receive` → `process` | cargoorderingmanager | 0.59 с / 0.51 с |
-| `sync-updated-driver receive` → `process` | driversblogmanagement | 0.55 с / 0.47 с |
+| `ordering-sync-driver receive` → `process` | orderingmanagement | 0.59 с / 0.51 с |
+| `sync-updated-driver receive` → `process` | blogmanagement | 0.55 с / 0.47 с |
 
 А в **Structured logs** записи `==>> [MassTransit Blog] …` та `==>> [MassTransit Ordering] …` з обох споживачів мають **той самий** TraceId, що і HTTP-запит.
 
@@ -440,7 +440,7 @@ flowchart TD
    * У вкладці **Structured logs** колонка *Trace* містить посилання на трейс; і навпаки — для спану можна відкрити пов'язані логи.
    * Ви бачите контекст подій лише цього `TraceId`, без шуму від сусідніх користувачів.
 
-> 🕵️ **Реальний кейс зі стенду.** Ендпоінт `GET /api/drivers/{id}` завжди повертав 200, але без постів. Трейс показав спан `driversblogmanagement: POST /DriverRpc/GetDriverWithPosts` з `grpc.status_code = 2` і **жодного SQL-спану** під ним — отже, падіння сталося ще до звернення до БД. Причина: `DriverRpcService` інжектував конкретний клас `DriverRepository`, який DI не реєстрував. Клієнт мовчки застосовував Graceful Degradation, тож без трасування помилку було б не помітно.
+> 🕵️ **Реальний кейс зі стенду.** Ендпоінт `GET /api/drivers/{id}` завжди повертав 200, але без постів. Трейс показав спан `blogmanagement: POST /DriverRpc/GetDriverWithPosts` з `grpc.status_code = 2` і **жодного SQL-спану** під ним — отже, падіння сталося ще до звернення до БД. Причина: `DriverRpcService` інжектував конкретний клас `DriverRepository`, який DI не реєстрував. Клієнт мовчки застосовував Graceful Degradation, тож без трасування помилку було б не помітно.
 
 ---
 
@@ -459,4 +459,4 @@ flowchart TD
 2. Виконайте GET-запит `api/simulation/slow?delaySeconds=2` на агрегаторі (`https://localhost:57390`).
 3. Знайдіть створений трейс у дашборді. Переконайтеся, що на діаграмі Ганта чітко видно затримку тривалістю ≈2000 мс.
 4. Викличте `GET /api/v1/resilience-demo/retry` і знайдіть у трейсі три клієнтські спани до `/api/simulation/flaky`. Виміряйте паузи між ними.
-5. Створіть водія (`POST /api/drivers`) і знайдіть трейс, у якому присутні **три** сервіси: driversmanagement, driversblogmanagement, cargoorderingmanager.
+5. Створіть водія (`POST /api/drivers`) і знайдіть трейс, у якому присутні **три** сервіси: driversmanagement, blogmanagement, orderingmanagement.

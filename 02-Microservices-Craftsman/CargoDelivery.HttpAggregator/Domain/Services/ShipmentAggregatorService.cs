@@ -14,7 +14,7 @@ using Microsoft.Extensions.Logging;
 ///    виконуються паралельно за допомогою Task.WhenAll.
 ///
 /// 2. Graceful Degradation (Часткова деградація):
-///    Якщо допоміжний мікросервіс (DriversBlogManagement) недоступний або відповідає
+///    Якщо допоміжний мікросервіс (BlogManagement) недоступний або відповідає
 ///    помилкою 503, загальний запит агрегатора НЕ падає з кодом 500.
 ///    Дані водія та замовлень повертаються успішно, прапорець IsDegraded встановлюється в true,
 ///    а стан фіксується у логах та трасуванні OpenTelemetry.
@@ -56,7 +56,7 @@ public sealed class ShipmentAggregatorService : IShipmentAggregatorService
         // Прапорець часткової деградації. Його змінює лямбда onFailure у SafeFetchRoadNotesAsync.
         bool isDegraded = false;
 
-        // КРОК 2: Паралельний Fan-Out (Scatter) до CargoOrderingManager та DriversBlogManagement.
+        // КРОК 2: Паралельний Fan-Out (Scatter) до OrderingManagement та BlogManagement.
         // Зверніть увагу: тут НЕМАЄ await — ми лише ЗАПУСКАЄМО обидва HTTP-запити. Обидва вже
         // летять мережею одночасно, а потік не блокується (очікування I/O не займає потоків пулу).
         // Доставки — жорстка залежність: їхній виняток НЕ перехоплюється і дійде до контролера (503).
@@ -139,7 +139,7 @@ public sealed class ShipmentAggregatorService : IShipmentAggregatorService
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
             // Warning, а не Error: збій передбачений і опрацьований — сервіс продовжує працювати
-            _logger.LogWarning(ex, "Мікросервіс DriversBlogManagement недоступний. Застосовано Graceful Degradation.");
+            _logger.LogWarning(ex, "Мікросервіс BlogManagement недоступний. Застосовано Graceful Degradation.");
             onFailure();
             return [];
         }

@@ -34,7 +34,7 @@
     },
     {
       "name": "cargo_ordering",
-      "description": "Access to CargoOrderingManager API",
+      "description": "Access to OrderingManagement API",
       "protocol": "openid-connect",
       "attributes": { "include.in.token.scope": "true", "display.on.consent.screen": "true" },
       "protocolMappers": [
@@ -53,7 +53,7 @@
     },
     {
       "name": "blog_management",
-      "description": "Access to DriversBlogManagement API",
+      "description": "Access to BlogManagement API",
       "protocol": "openid-connect",
       "attributes": { "include.in.token.scope": "true", "display.on.consent.screen": "true" },
       "protocolMappers": [

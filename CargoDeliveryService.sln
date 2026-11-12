@@ -47,17 +47,17 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "02-02-Communication-Documen
 		02-Microservices-Craftsman\02-02-Communication-Documentation\02_Patterns_Synchronous_HttpClient_Aggregator_BFF.md = 02-Microservices-Craftsman\02-02-Communication-Documentation\02_Patterns_Synchronous_HttpClient_Aggregator_BFF.md
 		02-Microservices-Craftsman\02-02-Communication-Documentation\03_Patterns_Synchronous_gRPC_Communication.md = 02-Microservices-Craftsman\02-02-Communication-Documentation\03_Patterns_Synchronous_gRPC_Communication.md
 		02-Microservices-Craftsman\02-02-Communication-Documentation\04_Patterns_Asynchronous_Messaging_MassTransit_RabbitMQ.md = 02-Microservices-Craftsman\02-02-Communication-Documentation\04_Patterns_Asynchronous_Messaging_MassTransit_RabbitMQ.md
-		02-Microservices-Craftsman\02-02-Communication-Documentation\CargoOrderingManager-README.md = 02-Microservices-Craftsman\02-02-Communication-Documentation\CargoOrderingManager-README.md
-		02-Microservices-Craftsman\02-02-Communication-Documentation\DriversBlogManagement-README.md = 02-Microservices-Craftsman\02-02-Communication-Documentation\DriversBlogManagement-README.md
+		02-Microservices-Craftsman\02-02-Communication-Documentation\OrderingManagement-README.md = 02-Microservices-Craftsman\02-02-Communication-Documentation\OrderingManagement-README.md
+		02-Microservices-Craftsman\02-02-Communication-Documentation\BlogManagement-README.md = 02-Microservices-Craftsman\02-02-Communication-Documentation\BlogManagement-README.md
 		02-Microservices-Craftsman\02-02-Communication-Documentation\DriversManagement-README.md = 02-Microservices-Craftsman\02-02-Communication-Documentation\DriversManagement-README.md
 		02-Microservices-Craftsman\02-02-Communication-Documentation\README.md = 02-Microservices-Craftsman\02-02-Communication-Documentation\README.md
 	EndProjectSection
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "CargoOrderingManager", "CargoOrderingManager", "{ABD51DD9-E7E1-4738-9CF4-B7C4015D9297}"
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "OrderingManagement", "OrderingManagement", "{ABD51DD9-E7E1-4738-9CF4-B7C4015D9297}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{E73125F0-98E8-4F46-8172-F9F099052D7B}"
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "DriversBlogManagement", "DriversBlogManagement", "{9EA63F78-2BBD-4978-9CAD-042F1AB45381}"
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "BlogManagement", "BlogManagement", "{9EA63F78-2BBD-4978-9CAD-042F1AB45381}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{CFD234DF-5BE1-49BF-8CDA-442E20A90427}"
 EndProject
@@ -94,15 +94,15 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AuthorizationModuleAPI", "0
 EndProject
 Project("{00D1A9C2-B5F0-4AF3-8072-F6C62B433612}") = "Drivers.JWT", "01-Ntier-Drivers\Drivers.JWT\Drivers.JWT.sqlproj", "{DA062081-4757-4F0B-876D-3E0037C471AA}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DriversBlogManagement", "02-Microservices-Craftsman\DriversBlogManagement\src\DriversBlogManagement\DriversBlogManagement.csproj", "{84FD3434-DA3F-4335-8142-93E53E062E77}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BlogManagement", "02-Microservices-Craftsman\BlogManagement\src\BlogManagement\BlogManagement.csproj", "{84FD3434-DA3F-4335-8142-93E53E062E77}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DriversBlogManagement.FunctionalTests", "02-Microservices-Craftsman\DriversBlogManagement\tests\DriversBlogManagement.FunctionalTests\DriversBlogManagement.FunctionalTests.csproj", "{E5629569-1EDA-4121-94C5-09A290564049}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BlogManagement.FunctionalTests", "02-Microservices-Craftsman\BlogManagement\tests\BlogManagement.FunctionalTests\BlogManagement.FunctionalTests.csproj", "{E5629569-1EDA-4121-94C5-09A290564049}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DriversBlogManagement.IntegrationTests", "02-Microservices-Craftsman\DriversBlogManagement\tests\DriversBlogManagement.IntegrationTests\DriversBlogManagement.IntegrationTests.csproj", "{D54DE0C5-2B92-4E12-B4B9-02B7C1ED5A9E}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BlogManagement.IntegrationTests", "02-Microservices-Craftsman\BlogManagement\tests\BlogManagement.IntegrationTests\BlogManagement.IntegrationTests.csproj", "{D54DE0C5-2B92-4E12-B4B9-02B7C1ED5A9E}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DriversBlogManagement.SharedTestHelpers", "02-Microservices-Craftsman\DriversBlogManagement\tests\DriversBlogManagement.SharedTestHelpers\DriversBlogManagement.SharedTestHelpers.csproj", "{EE2B0D46-3E64-46A3-B18A-63815EDECD6D}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BlogManagement.SharedTestHelpers", "02-Microservices-Craftsman\BlogManagement\tests\BlogManagement.SharedTestHelpers\BlogManagement.SharedTestHelpers.csproj", "{EE2B0D46-3E64-46A3-B18A-63815EDECD6D}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DriversBlogManagement.UnitTests", "02-Microservices-Craftsman\DriversBlogManagement\tests\DriversBlogManagement.UnitTests\DriversBlogManagement.UnitTests.csproj", "{B44D4A2A-5DF2-4242-A5E4-FD82D4E15624}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BlogManagement.UnitTests", "02-Microservices-Craftsman\BlogManagement\tests\BlogManagement.UnitTests\BlogManagement.UnitTests.csproj", "{B44D4A2A-5DF2-4242-A5E4-FD82D4E15624}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "KeycloakPulumiAuth", "02-Microservices-Craftsman\KeycloakPulumiAuth\KeycloakPulumiAuth.csproj", "{8CB25097-4B13-4417-A180-CF5B0888E3AD}"
 EndProject
@@ -124,15 +124,15 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Drivers.DAL.EF", "01-Ntier-
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DuendeIdentityInMemory", "02-Microservices-Craftsman\DuendeIdentityInMemory\DuendeIdentityInMemory.csproj", "{A2772C63-9DC0-4FFA-9119-8E2E736E92D1}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CargoOrderingManager", "02-Microservices-Craftsman\CargoOrderingManager\src\CargoOrderingManager\CargoOrderingManager.csproj", "{BE999222-FDB3-4BCE-BDC2-F9259591A5A2}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "OrderingManagement", "02-Microservices-Craftsman\OrderingManagement\src\OrderingManagement\OrderingManagement.csproj", "{BE999222-FDB3-4BCE-BDC2-F9259591A5A2}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CargoOrderingManager.UnitTests", "02-Microservices-Craftsman\CargoOrderingManager\tests\CargoOrderingManager.UnitTests\CargoOrderingManager.UnitTests.csproj", "{8C2519F8-6B82-4C54-98EE-E32BB204B308}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "OrderingManagement.UnitTests", "02-Microservices-Craftsman\OrderingManagement\tests\OrderingManagement.UnitTests\OrderingManagement.UnitTests.csproj", "{8C2519F8-6B82-4C54-98EE-E32BB204B308}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CargoOrderingManager.SharedTestHelpers", "02-Microservices-Craftsman\CargoOrderingManager\tests\CargoOrderingManager.SharedTestHelpers\CargoOrderingManager.SharedTestHelpers.csproj", "{F745F762-C862-4B20-A7BF-1FF11AB33F41}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "OrderingManagement.SharedTestHelpers", "02-Microservices-Craftsman\OrderingManagement\tests\OrderingManagement.SharedTestHelpers\OrderingManagement.SharedTestHelpers.csproj", "{F745F762-C862-4B20-A7BF-1FF11AB33F41}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CargoOrderingManager.IntegrationTests", "02-Microservices-Craftsman\CargoOrderingManager\tests\CargoOrderingManager.IntegrationTests\CargoOrderingManager.IntegrationTests.csproj", "{D9CA95E8-B6C3-452D-BD93-E7A4B72E5BB8}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "OrderingManagement.IntegrationTests", "02-Microservices-Craftsman\OrderingManagement\tests\OrderingManagement.IntegrationTests\OrderingManagement.IntegrationTests.csproj", "{D9CA95E8-B6C3-452D-BD93-E7A4B72E5BB8}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CargoOrderingManager.FunctionalTests", "02-Microservices-Craftsman\CargoOrderingManager\tests\CargoOrderingManager.FunctionalTests\CargoOrderingManager.FunctionalTests.csproj", "{C80140F9-057A-4194-AB6F-291A9A03D3B1}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "OrderingManagement.FunctionalTests", "02-Microservices-Craftsman\OrderingManagement\tests\OrderingManagement.FunctionalTests\OrderingManagement.FunctionalTests.csproj", "{C80140F9-057A-4194-AB6F-291A9A03D3B1}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NtierDrivers.UnitTests", "01-Ntier-Drivers\NtierDrivers.UnitTests\NtierDrivers.UnitTests.csproj", "{8EC287E9-E990-4325-81EC-13D625DEA6AF}"
 EndProject

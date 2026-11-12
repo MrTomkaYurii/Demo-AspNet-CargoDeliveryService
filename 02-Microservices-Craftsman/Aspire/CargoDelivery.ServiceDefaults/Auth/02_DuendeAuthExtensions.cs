@@ -70,8 +70,8 @@ public static class DuendeAuthExtensions
                         { "profile", "Профіль користувача" },
                         { "email", "Email адреса" },
                         { "drivers_management", "Доступ до DriversManagement" },
-                        { "cargo_ordering", "Доступ до CargoOrderingManager" },
-                        { "blog_management", "Доступ до DriversBlogManagement" }
+                        { "cargo_ordering", "Доступ до OrderingManagement" },
+                        { "blog_management", "Доступ до BlogManagement" }
                     }
                 }
             }

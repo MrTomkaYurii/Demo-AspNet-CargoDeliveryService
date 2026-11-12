@@ -17,7 +17,7 @@
 - [Слайд 6. Проєкт CargoDelivery.ServiceDefaults: Універсальний "швейцарський ніж" мікросервісу](#slide-6)
 - [Слайд 7. Прощавай, Jaeger! Перехід на нативний OTLP Pipeline у .NET Aspire Dashboard](#slide-7)
 - [Слайд 8. Distributed Tracing для MassTransit + RabbitMQ: Сквозний трейсинг EDA-подій](#slide-8)
-- [Слайд 9. Service Discovery на практиці: Як DriversManagement знаходить gRPC у DriversBlogManagement](#slide-9)
+- [Слайд 9. Service Discovery на практиці: Як DriversManagement знаходить gRPC у BlogManagement](#slide-9)
 - [Слайд 10. Інтелектуальний зв'язок з RabbitMQ: Гібридний fallback (Aspire vs appsettings vs In-Memory)](#slide-10)
 - [Слайд 11. Health Checks та Probes: Анатомія ендпоінтів /health та /alive](#slide-11)
 - [Слайд 12. Resilience & Polly у ServiceDefaults: Стандартна стійкість HTTP-клієнтів](#slide-12)
@@ -73,8 +73,8 @@ flowchart TB
             RMQ[("🐰 RabbitMQ 4.x (AMQP + Management UI)")]
             SQL[("💾 MS SQL Server 2022")]
             DB1[("dev_driversmanagement")]
-            DB2[("dev_driversblogmanagement")]
-            DB3[("dev_cargoorderingmanager")]
+            DB2[("dev_blogmanagement")]
+            DB3[("dev_orderingmanagement")]
             SQL --> DB1
             SQL --> DB2
             SQL --> DB3
@@ -82,8 +82,8 @@ flowchart TB
 
         subgraph Services ["⚡ Microservice Web APIs (.NET 10)"]
             DM["🚚 DriversManagement<br/>(Core API & Gateway Aggregator)"]
-            DB["📝 DriversBlogManagement<br/>(Blog & Feed API)"]
-            CO["📦 CargoOrderingManager<br/>(Orders API)"]
+            DB["📝 BlogManagement<br/>(Blog & Feed API)"]
+            CO["📦 OrderingManagement<br/>(Orders API)"]
             AGG["🛡️ CargoDelivery.HttpAggregator<br/>(Gateway Aggregator)"]
         end
     end
@@ -125,16 +125,16 @@ flowchart TB
    [👉 **Перейти до файлу (клікніть тут)**](../DriversManagement/src/DriversManagement/Controllers/v1/DriverDashboardController.cs)
 
 3. **Сервіс блогу водіїв (gRPC Сервер та стрічка дописів):**
-   > 📍 **Шлях до файлу:** `02-Microservices-Craftsman/DriversBlogManagement/src/DriversBlogManagement/DriversBlogManagement.csproj`  
+   > 📍 **Шлях до файлу:** `02-Microservices-Craftsman/BlogManagement/src/BlogManagement/BlogManagement.csproj`  
    *Соціальний функціонал, коментарі, вподобайки та високошвидкісний бінарний gRPC-ендпоінт.*
 
-   [👉 **Перейти до файлу (клікніть тут)**](../DriversBlogManagement/src/DriversBlogManagement/DriversBlogManagement.csproj)
+   [👉 **Перейти до файлу (клікніть тут)**](../BlogManagement/src/BlogManagement/BlogManagement.csproj)
 
 4. **Сервіс замовлень вантажів (Cargo Logistics):**
-   > 📍 **Шлях до файлу:** `02-Microservices-Craftsman/CargoOrderingManager/src/CargoOrderingManager/CargoOrderingManager.csproj`  
+   > 📍 **Шлях до файлу:** `02-Microservices-Craftsman/OrderingManagement/src/OrderingManagement/OrderingManagement.csproj`  
    *Управління замовленнями, рейсами, статусами доставки та фонова синхронізація водіїв.*
 
-   [👉 **Перейти до файлу (клікніть тут)**](../CargoOrderingManager/src/CargoOrderingManager/CargoOrderingManager.csproj)
+   [👉 **Перейти до файлу (клікніть тут)**](../OrderingManagement/src/OrderingManagement/OrderingManagement.csproj)
 
 5. **Виділений Gateway Aggregator (Scatter-Gather + лабораторія Polly):**
    > 📍 **Шлях до файлу:** `02-Microservices-Craftsman/CargoDelivery.HttpAggregator/Program.cs`
@@ -182,20 +182,20 @@ var rabbitmq = builder.AddRabbitMQ("rabbitmq")
 //    унікальними без урахування регістру і не збігатися з іменами проєктів.
 var sqlserver = builder.AddSqlServer("sqlserver");
 var driversDb = sqlserver.AddDatabase("driversmanagement-db", "dev_driversmanagement");
-var blogDb = sqlserver.AddDatabase("driversblogmanagement-db", "dev_driversblogmanagement");
-var cargoDb = sqlserver.AddDatabase("cargoorderingmanager-db", "dev_cargoorderingmanager");
+var blogDb = sqlserver.AddDatabase("blogmanagement-db", "dev_blogmanagement");
+var cargoDb = sqlserver.AddDatabase("orderingmanagement-db", "dev_orderingmanagement");
 
 // 3. Мікросервіс замовлень вантажів (MassTransit паблішер і консьюмер)
-var cargoApi = builder.AddProject<Projects.CargoOrderingManager>("cargoorderingmanager")
-    .WithReference(cargoDb, connectionName: "CargoOrderingManager") // → ConnectionStrings__CargoOrderingManager
+var cargoApi = builder.AddProject<Projects.OrderingManagement>("orderingmanagement")
+    .WithReference(cargoDb, connectionName: "OrderingManagement") // → ConnectionStrings__OrderingManagement
     .WithReference(rabbitmq)
     .WithHttpHealthCheck("/health")                                 // готовність = GET /health → 200
     .WaitFor(cargoDb)
     .WaitFor(rabbitmq);
 
 // 4. Мікросервіс блогу водіїв (gRPC сервер + MassTransit консьюмер)
-var blogApi = builder.AddProject<Projects.DriversBlogManagement>("driversblogmanagement")
-    .WithReference(blogDb, connectionName: "DriversBlogManagement")
+var blogApi = builder.AddProject<Projects.BlogManagement>("blogmanagement")
+    .WithReference(blogDb, connectionName: "BlogManagement")
     .WithReference(rabbitmq)
     .WithHttpHealthCheck("/health")
     .WaitFor(blogDb)
@@ -231,8 +231,8 @@ builder.Build().Run();
 2. `.WithReference(driversDb, connectionName: "DriversManagement")` автоматично інжектує у змінну середовища процесу рядок підключення:
    `ConnectionStrings__DriversManagement=Server=127.0.0.1,{порт};...;Database=dev_driversmanagement`
 3. `.WithReference(blogApi)` та `.WithReference(cargoApi)` автоматично додають адреси кінцевих точок у середовище `driversmanagement`:
-   `services__driversblogmanagement__https__0=https://localhost:5002`
-   `services__cargoorderingmanager__https__0=https://localhost:5003`
+   `services__blogmanagement__https__0=https://localhost:5002`
+   `services__orderingmanagement__https__0=https://localhost:5003`
 4. Карта рядків реального файлу з поясненнями — у [гайді 01, §4.2](01_Aspire_Orchestration_AppHost_DeepDive.md#section-4).
 
 [⬆ До змісту](#toc) • [Наступний слайд ➡](#slide-4)
@@ -271,7 +271,7 @@ sequenceDiagram
 [👉 **Перейти до файлу (клікніть тут)**](../Aspire/CargoDelivery.AppHost/AppHost.cs)
 
 #### 3. Чому це зручно?
-1. **Ізоляція баз даних:** Кожен мікросервіс отримує власну базу даних (`dev_driversmanagement`, `dev_driversblogmanagement`, `dev_cargoorderingmanager`), що повністю відповідає принципу **Database-per-Service** у Domain-Driven Design (DDD).
+1. **Ізоляція баз даних:** Кожен мікросервіс отримує власну базу даних (`dev_driversmanagement`, `dev_blogmanagement`, `dev_orderingmanagement`), що повністю відповідає принципу **Database-per-Service** у Domain-Driven Design (DDD).
 2. **Нуль налаштувань у appsettings.json:** Розробнику, який щойно склонував репозиторій, не потрібно налаштовувати паролі від SQL Server чи адреси хостів — Aspire згенерує і з'єднає все на льоту!
 3. **Ефемерність:** контейнери створюються заново при кожному запуску (без томів даних), тому схему БД сервіси створюють самі при старті (`MigrateAsync` або `EnsureCreatedAsync` — [MigrationHostedService.cs#L48](../DriversManagement/src/DriversManagement/Databases/MigrationHostedService.cs#L48)). Детальніше про «старі бази» і `WithDataVolume()` — [гайд 01, §9](01_Aspire_Orchestration_AppHost_DeepDive.md#section-9).
 
@@ -311,7 +311,7 @@ var driversApi = builder.AddProject<Projects.DriversManagement>("driversmanageme
 
 #### 3. Що бачить користувач у Aspire Dashboard?
 У вебінтерфейсі стан сервісу `driversmanagement` послідовно змінюється:
-1. `Waiting` — сервіс чекає на залежності з `.WaitFor(...)` (`driversmanagement-db`, `rabbitmq`, `driversblogmanagement`, `cargoorderingmanager`).
+1. `Waiting` — сервіс чекає на залежності з `.WaitFor(...)` (`driversmanagement-db`, `rabbitmq`, `blogmanagement`, `orderingmanagement`).
 2. `Starting` — як тільки залежності успішно пройшли перевірку готовності.
 3. `Running` + Health `Healthy` (зелений індикатор) — мікросервіс відповів 200 на `/health` і готовий приймати зовнішні HTTP-запити.
 
@@ -344,8 +344,8 @@ flowchart LR
     SD --> RES["🛡️ HTTP Resilience<br/>(Polly v8 Standard Resilience)"]
 
     DM["🚚 DriversManagement"] -->|AddServiceDefaults| SD
-    DB["📝 DriversBlogManagement"] -->|AddServiceDefaults| SD
-    CO["📦 CargoOrderingManager"] -->|AddServiceDefaults| SD
+    DB["📝 BlogManagement"] -->|AddServiceDefaults| SD
+    CO["📦 OrderingManagement"] -->|AddServiceDefaults| SD
     AGG["🛡️ HttpAggregator"] -->|AddServiceDefaults| SD
 ```
 
@@ -366,7 +366,7 @@ flowchart LR
 #### 3. Що під капотом методу `AddServiceDefaults()`?
 1. **`builder.ConfigureOpenTelemetry()`**: конфігурує збір метрик процесу, AspNetCore, HttpClient та експорт через OTLP.
 2. **`builder.AddDefaultHealthChecks()`**: додає перевірку працездатності (Liveness probe).
-3. **`builder.Services.AddServiceDiscovery()`**: дозволяє звертатися за назвами сервісів (`https+http://driversblogmanagement`).
+3. **`builder.Services.AddServiceDiscovery()`**: дозволяє звертатися за назвами сервісів (`https+http://blogmanagement`).
 4. **`http.AddStandardResilienceHandler()`**: активує механізм повторних спроб (retry), таймаутів та автоматичного розмикання ланцюга (circuit breaker) для **всіх** HttpClient і gRPC-клієнтів.
 
 Повний розбір — [гайд 02](02_ServiceDefaults_Architecture_And_Parameters.md).
@@ -431,7 +431,7 @@ flowchart TD
 ### 📬 Слайд 8. Distributed Tracing для MassTransit + RabbitMQ: Сквозний трейсинг EDA-подій
 
 #### 1. Теоретичне ядро
-У подієво-орієнтованих архітектурах (Event-Driven Architecture) класичне логування безсиле: коли `DriversManagement` публікує подію `IDriverCreated` у RabbitMQ, HTTP-запит клієнта вже завершився з кодом `201 Created`. Споживач (`DriversBlogManagement`) опрацює повідомлення асинхронно через кілька мілісекунд в іншому процесі.  
+У подієво-орієнтованих архітектурах (Event-Driven Architecture) класичне логування безсиле: коли `DriversManagement` публікує подію `IDriverCreated` у RabbitMQ, HTTP-запит клієнта вже завершився з кодом `201 Created`. Споживач (`BlogManagement`) опрацює повідомлення асинхронно через кілька мілісекунд в іншому процесі.  
 Як побачити зв'язок між цими операціями? **Сквозний розподілений трейсинг (Trace Context Propagation)**!
 
 MassTransit підтримує стандарт W3C `traceparent`. Коли повідомлення відправляється в чергу, MassTransit додає заголовки трасування. Коли консьюмер вичитує повідомлення, він підхоплює цей Trace ID!
@@ -471,11 +471,11 @@ gantt
     section RabbitMQ Broker
     Routing via Fanout Exchange :crit, p4, 45, 55
 
-    section DriversBlogManagement (Consumer)
+    section BlogManagement (Consumer)
     sync-updated-driver receive/process :active, p5, 55, 95
     SQL INSERT INTO drivers (тіньова копія) :p6, 65, 90
 
-    section CargoOrderingManager (Consumer)
+    section OrderingManagement (Consumer)
     ordering-sync-driver receive/process :active, p7, 55, 100
     SQL INSERT INTO drivers (тіньова копія) :p8, 70, 95
 ```
@@ -487,7 +487,7 @@ gantt
 ---
 
 <a id="slide-9"></a>
-### ⚡ Слайд 9. Service Discovery на практиці: Як DriversManagement знаходить gRPC у DriversBlogManagement
+### ⚡ Слайд 9. Service Discovery на практиці: Як DriversManagement знаходить gRPC у BlogManagement
 
 #### 1. Теоретичне ядро
 Раніше у файлі `appsettings.Development.json` для `DriversManagement` адреса gRPC-сервера була захардкоджена:
@@ -507,10 +507,10 @@ gantt
 // Реєстрація gRPC-клієнта з підтримкою .NET Aspire Service Discovery
 builder.Services.AddGrpcClient<DriverRpc.DriverRpcClient>(options =>
 {
-    // Під Aspire: логічне ім'я, яке резолвить Service Discovery (services:driversblogmanagement:https:0).
+    // Під Aspire: логічне ім'я, яке резолвить Service Discovery (services:blogmanagement:https:0).
     // Без Aspire: адреса з appsettings (GrpcServer:Address).
-    var grpcAddress = builder.Configuration["services:driversblogmanagement:https:0"] is not null
-        ? "https://driversblogmanagement"
+    var grpcAddress = builder.Configuration["services:blogmanagement:https:0"] is not null
+        ? "https://blogmanagement"
         : builder.Configuration.GetSection("GrpcServer")["Address"] ?? "https://localhost:5002";
 
     options.Address = new Uri(grpcAddress);
@@ -522,8 +522,8 @@ builder.Services.AddGrpcClient<DriverRpc.DriverRpcClient>(options =>
 
 #### 3. Як це працює по кроках:
 1. Коли проєкт запускається всередині Aspire AppHost через зв'язку `.WithReference(blogApi)`, Aspire передає адресу сервісу блогу у змінну середовища:
-   `services__driversblogmanagement__https__0 = https://localhost:5002`.
-2. `AddGrpcClient` будує клієнт через `IHttpClientFactory`, тому на нього діють глобальні налаштування ServiceDefaults: обробник Service Discovery підміняє `https://driversblogmanagement` на реальну адресу.
+   `services__blogmanagement__https__0 = https://localhost:5002`.
+2. `AddGrpcClient` будує клієнт через `IHttpClientFactory`, тому на нього діють глобальні налаштування ServiceDefaults: обробник Service Discovery підміняє `https://blogmanagement` на реальну адресу.
 3. Якщо сервіс запускається автономно (без Aspire), код безпечно повертається до значення з `appsettings.json` або дефолтного порту `https://localhost:5002`.
 4. gRPC вимагає HTTP/2 — тому використовується саме HTTPS-ендпоінт (HTTP/2 узгоджується через TLS ALPN).
 
@@ -540,7 +540,7 @@ builder.Services.AddGrpcClient<DriverRpc.DriverRpcClient>(options =>
 Коли мікросервіси запускаються в різних середовищах (локально в Aspire, в юніт-тестах, у Docker чи на CI/CD), вони отримують конфігурацію брокера повідомлень у різний спосіб:
 - В **Aspire** рядок підключення передається у стандартному форматі: `ConnectionStrings:rabbitmq = amqp://guest:{згенерований_пароль}@localhost:{динамічний_порт}`.
 - У **класичному запуску Craftsman** параметри розбиті по секціях: `RabbitMq:Host`, `RabbitMq:Port`, `RabbitMq:Username` тощо.
-- В **тестах** зовнішнього брокера немає взагалі: у DriversManagement і блозі шина в тестових середовищах не реєструється, а CargoOrderingManager має fallback на `In-Memory Bus`.
+- В **тестах** зовнішнього брокера немає взагалі: у DriversManagement і блозі шина в тестових середовищах не реєструється, а OrderingManagement має fallback на `In-Memory Bus`.
 
 #### 2. Універсальний адаптер у MassTransitServiceExtension
 > 📍 **Шлях до файлу:** `02-Microservices-Craftsman/DriversManagement/src/DriversManagement/Extensions/Services/MassTransitServiceExtension.cs`
@@ -728,7 +728,7 @@ flowchart TD
    Зробіть виклик через Swagger або [CargoDelivery.HttpAggregator.http](../CargoDelivery.HttpAggregator/CargoDelivery.HttpAggregator.http) `POST /api/drivers`. Перейдіть у Traces: ви побачите єдиний рядок трейсу. Відкривши його, ви побачите ієрархію: виклик контролера ➔ збереження в SQL ➔ публікація в RabbitMQ ➔ асинхронний прийом у блозі та в сервісі замовлень.
 3. **Вкладка Structured Logs:**
    Швидкий пошук за будь-яким `DriverId` чи винятком (спробуйте ввести `MassTransit` у фільтр). Натискання на Trace ID у лозі миттєво переносить вас у вікно детального трейсу цієї операції!
-4. **Кнопки ■ / ▶ у колонці Actions:** зупиніть `driversblogmanagement` і подивіться, як агрегатор переходить у режим `Partial (Degraded)` — це найкраща жива демонстрація стійкості.
+4. **Кнопки ■ / ▶ у колонці Actions:** зупиніть `blogmanagement` і подивіться, як агрегатор переходить у режим `Partial (Degraded)` — це найкраща жива демонстрація стійкості.
 
 [⬆ До змісту](#toc) • [Наступний слайд ➡](#slide-14)
 
@@ -739,8 +739,8 @@ flowchart TD
 
 #### 1. Передумови та технічні виклики
 Початковий стан Блоку 2 мав суттєвий архітектурний розрив:
-- `CargoOrderingManager` вже був на .NET 10.
-- `DriversManagement` та `DriversBlogManagement` залишалися на .NET 7 (який вже є End-of-Life).
+- `OrderingManagement` вже був на .NET 10.
+- `DriversManagement` та `BlogManagement` залишалися на .NET 7 (який вже є End-of-Life).
 - Проєкти використовували несумісні версії залежностей і застарілий Jaeger-клієнт.
 
 #### 2. Що було зроблено під час модернізації:
@@ -757,12 +757,12 @@ flowchart TD
 3. **Видалення застарілих компонентів:**  
    Повністю демонтовано `OpenTelemetry.Exporter.Jaeger`. Його функціонал замінено нативним OTLP через `CargoDelivery.ServiceDefaults`.
 4. **Відмова від міжсервісного `ProjectReference`:**
-   Раніше DriversManagement посилався на проєкт DriversBlogManagement (заради gRPC-типів) з `<PrivateAssets>all</PrivateAssets>`. Це тягнуло в процес чужі контролери (`AmbiguousMatchException` на `/api/drivers`). Тепер спільний лише контракт `Driver.proto`, який компілюється як `GrpcServices="Client"`.
+   Раніше DriversManagement посилався на проєкт BlogManagement (заради gRPC-типів) з `<PrivateAssets>all</PrivateAssets>`. Це тягнуло в процес чужі контролери (`AmbiguousMatchException` на `/api/drivers`). Тепер спільний лише контракт `Driver.proto`, який компілюється як `GrpcServices="Client"`.
 
 #### 2.1. Стабілізація запуску через Aspire (що було виправлено)
 | Проблема | Рішення |
 | :--- | :--- |
-| AppHost падав: ресурс `CargoOrderingManager` (БД) конфліктував з проєктом `cargoorderingmanager` | Ресурси БД перейменовано на `*-db` + `connectionName` |
+| AppHost падав: ресурс `OrderingManagement` (БД) конфліктував з проєктом `orderingmanagement` | Ресурси БД перейменовано на `*-db` + `connectionName` |
 | `Newer version of the Aspire.Hosting.AppHost package is required` | SDK вирівняно до 13.6.1 |
 | Порожні бази (`Invalid object name ...`) | `MigrateAsync` / `EnsureCreatedAsync` при старті |
 | Неможливо створити водія (FK `companies`) / тіньовий водій отримував чужий Id | Виправлено зв'язки «один-до-одного» зі спільним PK + нові міграції |
@@ -773,8 +773,8 @@ flowchart TD
 
 #### 3. Верифікація результатів тестування
 Після міграції виконано запуск усіх тестових наборів:
-- `CargoOrderingManager.UnitTests`: **37 Passed** (0 Failed)
-- `DriversBlogManagement.UnitTests`: **49 Passed** (0 Failed)
+- `OrderingManagement.UnitTests`: **37 Passed** (0 Failed)
+- `BlogManagement.UnitTests`: **49 Passed** (0 Failed)
 - `DriversManagement.UnitTests`: **57 Passed** (0 Failed)
 - `CargoDelivery.HttpAggregator.Tests`: **6 Passed** (3 юніт + 3 функціональні, 0 Failed)
 - **Підсумок:** **149 тестів з 149 проходять успішно (100% Green)**.
@@ -816,8 +816,8 @@ dotnet run --project "02-Microservices-Craftsman\Aspire\CargoDelivery.AppHost\Ca
 3. Дочекається повної готовності баз та черг (`.WaitFor()`).
 4. Запустить усі 4 Web API (порти фіксовані в `launchSettings.json` кожного сервісу):
    - `driversmanagement` — `https://localhost:5001/swagger`
-   - `driversblogmanagement` — `https://localhost:5002/swagger`
-   - `cargoorderingmanager` — `https://localhost:5003/swagger`
+   - `blogmanagement` — `https://localhost:5002/swagger`
+   - `orderingmanagement` — `https://localhost:5003/swagger`
    - `httpaggregator` — `https://localhost:57390/swagger`
 5. Автоматично наповнить бази демо-даними (Bogus): 50 водіїв → події RabbitMQ → тіньові копії → 50 постів і 50 замовлень із доставками. Візьміть `id` будь-якого водія з `GET https://localhost:5001/api/drivers/all`.
 
@@ -832,7 +832,7 @@ dotnet run --project "02-Microservices-Craftsman\Aspire\CargoDelivery.AppHost\Ca
 3. **Демо-дані:** `POST https://localhost:5003/api/internal/deliveries/demo-seed?driverId={id}` і `POST https://localhost:5002/api/internal/postaboutdrivers/demo-seed?driverId={id}`.
 4. **Паралельний HTTP Aggregator / BFF (Task.WhenAll):**
    Виконайте `GET /api/v1/driver-dashboard/{id}` (BFF у DriversManagement) або `GET https://localhost:57390/api/v1/shipment-summary/{id}` (виділений агрегатор).
-   *Агрегатор паралельно опитає `CargoOrderingManager` та `DriversBlogManagement`, зливаючи інформацію у єдиний об'єднаний DTO.*
+   *Агрегатор паралельно опитає `OrderingManagement` та `BlogManagement`, зливаючи інформацію у єдиний об'єднаний DTO.*
 5. **Синхронний бінарний RPC (gRPC HTTP/2):**
    Виконайте `GET /api/drivers/{id}`.
    *Сервіс виконає прямий бінарний виклик `GetDriverWithPosts` до віддаленого сервера блогу з автоматичним Graceful Degradation fallback при аварії — у відповіді поле `posts`.*

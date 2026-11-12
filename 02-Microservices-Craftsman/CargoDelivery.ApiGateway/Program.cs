@@ -6,8 +6,8 @@
 // У мікросервісній системі CargoDeliveryService клієнтський застосунок (Web / Mobile / WPF)
 // НЕ повинен знати фізичні адреси та порти внутрішніх мікросервісів:
 //   • DriversManagement       (:5001)
-//   • DriversBlogManagement   (:5002)
-//   • CargoOrderingManager    (:5003)
+//   • BlogManagement   (:5002)
+//   • OrderingManagement    (:5003)
 //   • CargoDelivery.HttpAggregator (:5005)
 //
 // Замість цього весь зовнішній трафік проходить через Ocelot API Gateway (https://localhost:5000),

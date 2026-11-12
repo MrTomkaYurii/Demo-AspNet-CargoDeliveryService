@@ -19,9 +19,9 @@
 * **Патерн CQRS:** Реалізація команд і запитів через **MediatR 12.2.0** з валідацією запитів через **FluentValidation**.
 * **База даних та ORM:** Microsoft SQL Server, Entity Framework Core 8.0, авто-міграції.
 * **Синхронна комунікація (gRPC Client):**
-  * Використовує клієнт `DriverRpcClient` для виклику `DriversBlogManagement` за протоколом HTTP/2 Protobuf для отримання постів водія. Клієнт генерується з `Driver.proto` (`GrpcServices="Client"`) — **без** посилання на проєкт блогу.
+  * Використовує клієнт `DriverRpcClient` для виклику `BlogManagement` за протоколом HTTP/2 Protobuf для отримання постів водія. Клієнт генерується з `Driver.proto` (`GrpcServices="Client"`) — **без** посилання на проєкт блогу.
 * **Синхронна комунікація (HTTP BFF):**
-  * `GET /api/v1/driver-dashboard/{id}` паралельно опитує `CargoOrderingManager` і `DriversBlogManagement` через їхні внутрішні ендпоінти `api/internal/*` (`Task.WhenAll` + Graceful Degradation).
+  * `GET /api/v1/driver-dashboard/{id}` паралельно опитує `OrderingManagement` і `BlogManagement` через їхні внутрішні ендпоінти `api/internal/*` (`Task.WhenAll` + Graceful Degradation).
   * `GET /api/internal/drivers/{id}` — компактна картка водія для `CargoDelivery.HttpAggregator`.
 * **Асинхронна комунікація (MassTransit + RabbitMQ):**
   * Публікує події `IDriverCreated` та `IDriverUpdated` із `SharedKernel` у шину RabbitMQ (Fanout Exchanges).
@@ -71,13 +71,13 @@ flowchart TD
     DM["🚚 DriversManagement API"]
     
     subgraph Outgoing_gRPC["gRPC (Синхронний виклик)"]
-        DM -- "HTTP/2 Protobuf (DriverRpcClient)" --> BloggRPC["📝 DriversBlogManagement"]
+        DM -- "HTTP/2 Protobuf (DriverRpcClient)" --> BloggRPC["📝 BlogManagement"]
     end
 
     subgraph Outgoing_Events["MassTransit (Асинхронний Pub/Sub)"]
         DM -- "Publish(IDriverCreated, IDriverUpdated)" --> RMQ["🐰 RabbitMQ (Fanout)"]
-        RMQ --> BlogCons["📝 DriversBlogManagement (SyncDriver)"]
-        RMQ --> OrdCons["📦 CargoOrderingManager (SyncDriverInOrdering)"]
+        RMQ --> BlogCons["📝 BlogManagement (SyncDriver)"]
+        RMQ --> OrdCons["📦 OrderingManagement (SyncDriverInOrdering)"]
     end
 ```
 

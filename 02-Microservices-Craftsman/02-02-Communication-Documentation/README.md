@@ -27,7 +27,7 @@
   * Використання `IHttpClientFactory` та типізованих клієнтів (Typed Clients) у .NET 10.
   * Паралельний Fan-Out / Fan-In (`Task.WhenAll`) для одночасного опитування підпорядкованих мікросервісів.
   * Стійкість та ізоляція збоїв: патерн Graceful Degradation (повернення часткових даних при недоступності окремого сервісу).
-  * Нативне розпізнавання імен через .NET Aspire Service Discovery (`https+http://cargoorderingmanager`, тощо).
+  * Нативне розпізнавання імен через .NET Aspire Service Discovery (`https+http://orderingmanagement`, тощо).
   * Внутрішні (service-to-service) ендпоінти `api/internal/*` та окремий короткий бюджет Polly для некритичних залежностей.
   * Порівняння вбудованого BFF (`DriversManagement`) і виділеного агрегатора (`CargoDelivery.HttpAggregator`).
 
@@ -36,7 +36,7 @@
 * **Ключові концепції:**
   * Чому для внутрішнього зв'язку сервіс-до-сервісу обирають бінарний gRPC замість текстового REST JSON.
   * Контракти Protobuf (`Driver.proto`) та автоматична MSBuild-кодогенерація типів C#.
-  * Реалізація gRPC-сервера `DriverRpcService` у `DriversBlogManagement`.
+  * Реалізація gRPC-сервера `DriverRpcService` у `BlogManagement`.
   * Contract-first: клієнт `DriverRpcClient` у `DriversManagement` генерується з того самого `.proto` (`GrpcServices="Client"`), резолвінг через Service Discovery.
   * Статуси gRPC (`grpc-status` у трейлері), HTTP/2, wire-формат Protobuf, діагностика через трасування.
   * Патерн стійкості Graceful Degradation при збої віддаленого RPC-сервісу.
@@ -48,7 +48,7 @@
   * Патерн Publish/Subscribe та типові топології RabbitMQ (Fanout Exchanges & Quorum Queues; чому «lazy»-аргумент був міфом).
   * Повтори споживачів (`UseMessageRetry`), черги `_error`, Dual-Write і Transactional Outbox.
   * Контракти доменних подій із `SharedKernel` (`IDriverCreated`, `IDriverUpdated`, `IOrderCreated`).
-  * Споживачі (Consumers) у `DriversBlogManagement` та `CargoOrderingManager`.
+  * Споживачі (Consumers) у `BlogManagement` та `OrderingManagement`.
   * Наскрізний Distributed Tracing повідомлень через OpenTelemetry (OTLP).
 
 ---
@@ -56,8 +56,8 @@
 ## 📑 Огляди мікросервісів
 
 * 🚚 **[DriversManagement-README.md](DriversManagement-README.md)** — Головний сервіс обліку водіїв, автопарку, ремонтів, техоглядів, gRPC-клієнт та видавець подій.
-* 📦 **[CargoOrderingManager-README.md](CargoOrderingManager-README.md)** — Специфікація мікросервісу замовлень, доставок, рейсів та обробки подій водіїв.
-* 📝 **[DriversBlogManagement-README.md](DriversBlogManagement-README.md)** — Специфікація мікросервісу блогу водіїв, постів, коментарів та вбудованого gRPC-сервера.
+* 📦 **[OrderingManagement-README.md](OrderingManagement-README.md)** — Специфікація мікросервісу замовлень, доставок, рейсів та обробки подій водіїв.
+* 📝 **[BlogManagement-README.md](BlogManagement-README.md)** — Специфікація мікросервісу блогу водіїв, постів, коментарів та вбудованого gRPC-сервера.
 
 ---
 

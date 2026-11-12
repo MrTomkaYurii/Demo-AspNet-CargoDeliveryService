@@ -5,8 +5,8 @@
 // 1. Приймає запит диспетчера на отримання зведеного звіту замовлення та водія.
 // 2. Паралельно опрацьовує HTTP-запити до трьох незалежних сервісів через IHttpClientFactory:
 //    - https+http://driversmanagement
-//    - https+http://cargoorderingmanager
-//    - https+http://driversblogmanagement
+//    - https+http://orderingmanagement
+//    - https+http://blogmanagement
 // 3. Забезпечує Service Discovery, Polly Resilience та наскрізне трасування OpenTelemetry.
 // ====================================================================================
 
@@ -74,7 +74,7 @@ builder.Services.AddHttpClient<IDriverApiClient, DriverApiClient>(client =>
     .AddHttpMessageHandler<AuthorizationForwardingHandler>();
 
 builder.Services.AddHttpClient<ICargoOrderApiClient, CargoOrderApiClient>(client =>
-    client.BaseAddress = new Uri("https+http://cargoorderingmanager"))
+    client.BaseAddress = new Uri("https+http://orderingmanagement"))
     .AddHttpMessageHandler<AuthorizationForwardingHandler>();
 
 // Блог — НЕКРИТИЧНА залежність (Graceful Degradation). Стандартний бюджет Polly (30 с,
@@ -82,7 +82,7 @@ builder.Services.AddHttpClient<ICargoOrderApiClient, CargoOrderApiClient>(client
 // цього клієнта — короткий бюджет: спроба 1 с, один повтор, загалом не більше 3 с.
 // Після цього SafeFetchRoadNotesAsync повертає порожній список і IsDegraded = true.
 builder.Services.AddHttpClient<IDriverBlogApiClient, DriverBlogApiClient>(client =>
-        client.BaseAddress = new Uri("https+http://driversblogmanagement"))
+        client.BaseAddress = new Uri("https+http://blogmanagement"))
     .AddHttpMessageHandler<AuthorizationForwardingHandler>()
     .RemoveAllResilienceHandlers()
     .AddStandardResilienceHandler(options =>

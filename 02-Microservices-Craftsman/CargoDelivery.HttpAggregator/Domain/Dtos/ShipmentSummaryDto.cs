@@ -8,8 +8,8 @@ namespace CargoDelivery.HttpAggregator.Domain.Dtos;
 /// Єдиний зведений об'єкт диспетчера, сформований у результаті виконання патерну
 /// Gateway Aggregator (Scatter-Gather) шляхом паралельного опитування трьох мікросервісів:
 /// 1. DriversManagement -> Driver
-/// 2. CargoOrderingManager -> ActiveOrders
-/// 3. DriversBlogManagement -> RoadNotes
+/// 2. OrderingManagement -> ActiveOrders
+/// 3. BlogManagement -> RoadNotes
 ///
 /// GRACEFUL DEGRADATION:
 /// Поле IsDegraded сигналізує клієнту, чи всі дані були отримані, чи один із сервісів

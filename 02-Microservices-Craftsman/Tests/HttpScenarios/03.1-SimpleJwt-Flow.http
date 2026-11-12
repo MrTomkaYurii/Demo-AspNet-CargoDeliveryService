@@ -4,7 +4,7 @@
 # Демонструє класичну модель без зовнішнього OIDC-провайдера:
 #   1. Користувач реєструється / логіниться у AuthorizationModuleAPI.
 #   2. Отримує симетричний JWT-токен (HMAC-SHA256) із iss = "AuthorizationModuleAPI".
-#   3. Використовує токен для доступу до DriversManagement, CargoOrderingManager та ApiGateway.
+#   3. Використовує токен для доступу до DriversManagement, OrderingManagement та ApiGateway.
 #   4. SmartAuthPolicy автоматично розпізнає iss == "AuthorizationModuleAPI" -> SimpleJwtScheme.
 # ====================================================================================
 
@@ -45,6 +45,6 @@ GET {{DriversApiHost}}/api/drivers
 GET {{DriversApiHost}}/api/drivers
 Authorization: Bearer {{jwtToken}}
 
-### КРОК 5: Наскрізний запит через ApiGateway -> HttpAggregator -> DriversManagement + CargoOrderingManager
+### КРОК 5: Наскрізний запит через ApiGateway -> HttpAggregator -> DriversManagement + OrderingManagement
 GET {{ApiGatewayHost}}/gateway/custom-aggregate/1
 Authorization: Bearer {{jwtToken}}

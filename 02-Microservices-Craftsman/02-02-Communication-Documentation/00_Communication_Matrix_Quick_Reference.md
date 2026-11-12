@@ -21,8 +21,8 @@ flowchart TD
 
     subgraph CoreServices ["⚡ Мікросервіси системи (.NET 10)"]
         DM["🚚 DriversManagement<br/>(BFF Aggregator & Core Domain)"]
-        DB["📝 DriversBlogManagement<br/>(Social Domain & gRPC Server)"]
-        CO["📦 CargoOrderingManager<br/>(Logistics Domain)"]
+        DB["📝 BlogManagement<br/>(Social Domain & gRPC Server)"]
+        CO["📦 OrderingManagement<br/>(Logistics Domain)"]
     end
 
     subgraph RabbitMQ ["🐰 RabbitMQ Broker (AMQP 0-9-1)"]
@@ -60,7 +60,7 @@ flowchart TD
 
 Коли клієнт запитує єдиний зведений екран кабінету водія, контролер `DriverDashboardController` передає запит обробнику `GetDriverDashboard.Handler`, який:
 1. Зчитує локальний агрегат водія з `DriversManagement DB` (EF Core) — **послідовно**, як «вартовий» (немає водія → 404, решту не опитуємо).
-2. **Паралельно** (через `Task.WhenAll`) викликає `CargoOrderingManager` через `CargoOrderingApiClient` (доставки водія), `DriversBlogManagement` через `DriversBlogApiClient` (останні пости) і читає вантажівку з локальної БД.
+2. **Паралельно** (через `Task.WhenAll`) викликає `OrderingManagement` через `CargoOrderingApiClient` (доставки водія), `BlogManagement` через `DriversBlogApiClient` (останні пости) і читає вантажівку з локальної БД.
 3. Об'єднує результат у єдиний `AggregatedDriverDashboardDto` з прапорцем `IsPartialData`.
 
 ```mermaid
@@ -70,8 +70,8 @@ sequenceDiagram
     participant Ctrl as 🎮 DriverDashboardController
     participant Hndl as ⚙️ GetDriverDashboard.Handler
     participant LocalDB as 🗄️ Drivers DB (Local)
-    participant CO_API as 📦 CargoOrderingManager (HTTP)
-    participant Blog_API as 📝 DriversBlogManagement (HTTP)
+    participant CO_API as 📦 OrderingManagement (HTTP)
+    participant Blog_API as 📝 BlogManagement (HTTP)
 
     User->>Ctrl: GET /api/v1/driver-dashboard/{id}
     Ctrl->>Hndl: Send(GetDriverDashboard.Query)
@@ -106,9 +106,9 @@ sequenceDiagram
 | **HTTP-клієнт замовлень** | `DriversManagement` | [CargoOrderingApiClient.cs#L59](../DriversManagement/src/DriversManagement/Domain/Drivers/Services/Http/CargoOrderingApiClient.cs#L59)<br/>([ICargoOrderingApiClient](../DriversManagement/src/DriversManagement/Domain/Drivers/Services/Http/ICargoOrderingApiClient.cs)) | `GetActiveDeliveriesByDriverAsync()` | Типізований клієнт: Aspire Service Discovery + глобальний конвеєр Polly |
 | **HTTP-клієнт блогу** | `DriversManagement` | [DriversBlogApiClient.cs#L52](../DriversManagement/src/DriversManagement/Domain/Drivers/Services/Http/DriversBlogApiClient.cs#L52)<br/>([IDriversBlogApiClient](../DriversManagement/src/DriversManagement/Domain/Drivers/Services/Http/IDriversBlogApiClient.cs)) | `GetDriverPostsAsync()` | Типізований клієнт з коротким бюджетом часу (≤3 с) та Graceful Fallback |
 | **Зведена модель** | `DriversManagement` | [AggregatedDriverDashboardDto.cs](../DriversManagement/src/DriversManagement/Domain/Drivers/Dtos/AggregatedDriverDashboardDto.cs) | `AggregatedDriverDashboardDto` | Композитна DTO-модель (Driver + Truck + Deliveries + Posts) |
-| **DI Конфігурація** | `DriversManagement` | [WebAppServiceConfiguration.cs#L81](../DriversManagement/src/DriversManagement/Extensions/Services/WebAppServiceConfiguration.cs#L81) | `AddHttpClient(...)` | Реєстрація клієнтів з логічними адресами `https+http://cargoorderingmanager` та `https+http://driversblogmanagement` |
-| **Цільовий сервіс 1** | `CargoOrderingManager` | [InternalDeliveriesController.cs#L46](../CargoOrderingManager/src/CargoOrderingManager/Controllers/v1/InternalDeliveriesController.cs#L46) | `GET /api/internal/deliveries?driverId=` | Внутрішній (service-to-service) ендпоінт: доставки конкретного водія |
-| **Цільовий сервіс 2** | `DriversBlogManagement` | [InternalPostAboutDriversController.cs#L45](../DriversBlogManagement/src/DriversBlogManagement/Controllers/v1/InternalPostAboutDriversController.cs#L45) | `GET /api/internal/postaboutdrivers?driverId=` | Внутрішній ендпоінт: до 10 останніх постів водія |
+| **DI Конфігурація** | `DriversManagement` | [WebAppServiceConfiguration.cs#L81](../DriversManagement/src/DriversManagement/Extensions/Services/WebAppServiceConfiguration.cs#L81) | `AddHttpClient(...)` | Реєстрація клієнтів з логічними адресами `https+http://orderingmanagement` та `https+http://blogmanagement` |
+| **Цільовий сервіс 1** | `OrderingManagement` | [InternalDeliveriesController.cs#L46](../OrderingManagement/src/OrderingManagement/Controllers/v1/InternalDeliveriesController.cs#L46) | `GET /api/internal/deliveries?driverId=` | Внутрішній (service-to-service) ендпоінт: доставки конкретного водія |
+| **Цільовий сервіс 2** | `BlogManagement` | [InternalPostAboutDriversController.cs#L45](../BlogManagement/src/BlogManagement/Controllers/v1/InternalPostAboutDriversController.cs#L45) | `GET /api/internal/postaboutdrivers?driverId=` | Внутрішній ендпоінт: до 10 останніх постів водія |
 | **Виділений агрегатор** | `CargoDelivery.HttpAggregator` | [ShipmentAggregatorService.cs#L42](../CargoDelivery.HttpAggregator/Domain/Services/ShipmentAggregatorService.cs#L42) | `GET /api/v1/shipment-summary/{id}` | Scatter-Gather до трьох сервісів, 200 / 404 / 503, Graceful Degradation |
 | **Внутрішня картка водія** | `DriversManagement` | [InternalDriversController.cs#L43](../DriversManagement/src/DriversManagement/Controllers/v1/InternalDriversController.cs#L43) | `GET /api/internal/drivers/{id}` | Компактні дані водія для агрегатора |
 
@@ -124,7 +124,7 @@ sequenceDiagram
 
 gRPC забезпечує ультранизьку затримку (Low Latency) та компактний бінарний формат передачі даних:
 - **Клієнт:** `DriversManagement` через згенерований `DriverRpc.DriverRpcClient`.
-- **Сервер:** `DriversBlogManagement` через клас `DriverRpcService`.
+- **Сервер:** `BlogManagement` через клас `DriverRpcService`.
 - **Захист від каскадного збою:** Якщо gRPC-сервер тимчасово недоступний, клієнт перехоплює `RpcException` та повертає водія з порожнім списком публікацій (`Fallback`), не ламаючи весь запит користувача! Завдяки короткому бюджету Polly деградація займає ≈2 с, а не 30 с.
 
 ```mermaid
@@ -161,13 +161,13 @@ sequenceDiagram
 
 | Сторона взаємодії | Проєкт | Компонент / Клас | Файл / Контракт | Призначення |
 | :--- | :--- | :--- | :--- | :--- |
-| **Контракт Protobuf** | Спільний | `Domain/Drivers/Protos/Driver.proto` | [Driver.proto](../DriversBlogManagement/src/DriversBlogManagement/Domain/Drivers/Protos/Driver.proto) | Бінарний IDL-контракт: `rpc GetDriverWithPosts`, повідомлення `DriverWithPostsRequest` та `DriverWithPostsResponse` |
-| **Генерація коду (сервер)** | `DriversBlogManagement` | [DriversBlogManagement.csproj](../DriversBlogManagement/src/DriversBlogManagement/DriversBlogManagement.csproj) | `<Protobuf GrpcServices="Both" />` | Компілятор Protobuf генерує серверний базовий клас (і клієнт) C# |
+| **Контракт Protobuf** | Спільний | `Domain/Drivers/Protos/Driver.proto` | [Driver.proto](../BlogManagement/src/BlogManagement/Domain/Drivers/Protos/Driver.proto) | Бінарний IDL-контракт: `rpc GetDriverWithPosts`, повідомлення `DriverWithPostsRequest` та `DriverWithPostsResponse` |
+| **Генерація коду (сервер)** | `BlogManagement` | [BlogManagement.csproj](../BlogManagement/src/BlogManagement/BlogManagement.csproj) | `<Protobuf GrpcServices="Both" />` | Компілятор Protobuf генерує серверний базовий клас (і клієнт) C# |
 | **Генерація коду (клієнт)** | `DriversManagement` | [DriversManagement.csproj](../DriversManagement/src/DriversManagement/DriversManagement.csproj) | `<Protobuf Include="…Driver.proto" GrpcServices="Client" />` | Той самий `.proto` компілюється лише як клієнт — без посилання на проєкт блогу (contract-first) |
 | **gRPC Клієнт (Виклик)** | `DriversManagement` | [GetDriver.cs#L93](../DriversManagement/src/DriversManagement/Domain/Drivers/Features/GetDriver.cs#L93) (виклик), [#L108](../DriversManagement/src/DriversManagement/Domain/Drivers/Features/GetDriver.cs#L108) (fallback) | `GetDriver.Handler` | Викликає `_client.GetDriverWithPostsAsync` та інкапсулює Graceful Degradation `try/catch (RpcException)` |
-| **Реєстрація клієнта** | `DriversManagement` | [WebAppServiceConfiguration.cs#L58](../DriversManagement/src/DriversManagement/Extensions/Services/WebAppServiceConfiguration.cs#L58) | `AddGrpcClient<DriverRpcClient>` | Логічна адреса `https://driversblogmanagement` (Service Discovery) або fallback з `GrpcServer:Address`; короткий бюджет Polly |
-| **gRPC Сервер (Реалізація)** | `DriversBlogManagement` | [DriverRpcService.cs#L57](../DriversBlogManagement/src/DriversBlogManagement/Domain/Drivers/Services/DriverRpcService.cs#L57) | `DriverRpcService : DriverRpcBase` | Серверна реалізація, що робить запит до локальної БД блогу через `IDriverRepository` та мапить результати в Protobuf |
-| **Реєстрація сервера** | `DriversBlogManagement` | [Program.cs#L39](../DriversBlogManagement/src/DriversBlogManagement/Program.cs#L39) | `app.MapGrpcService<DriverRpcService>()` | Підключення gRPC-конвеєра в ASP.NET Core Kestrel |
+| **Реєстрація клієнта** | `DriversManagement` | [WebAppServiceConfiguration.cs#L58](../DriversManagement/src/DriversManagement/Extensions/Services/WebAppServiceConfiguration.cs#L58) | `AddGrpcClient<DriverRpcClient>` | Логічна адреса `https://blogmanagement` (Service Discovery) або fallback з `GrpcServer:Address`; короткий бюджет Polly |
+| **gRPC Сервер (Реалізація)** | `BlogManagement` | [DriverRpcService.cs#L57](../BlogManagement/src/BlogManagement/Domain/Drivers/Services/DriverRpcService.cs#L57) | `DriverRpcService : DriverRpcBase` | Серверна реалізація, що робить запит до локальної БД блогу через `IDriverRepository` та мапить результати в Protobuf |
+| **Реєстрація сервера** | `BlogManagement` | [Program.cs#L39](../BlogManagement/src/BlogManagement/Program.cs#L39) | `app.MapGrpcService<DriverRpcService>()` | Підключення gRPC-конвеєра в ASP.NET Core Kestrel |
 
 > 📖 **Детальний навчальний гайд:** [03_Patterns_Synchronous_gRPC_Communication.md](03_Patterns_Synchronous_gRPC_Communication.md)
 
@@ -187,7 +187,7 @@ flowchart LR
     subgraph Publishers ["🚀 Продюсери подій"]
         DM_Add["AddDriver.cs<br/>(DriversManagement)"]
         DM_Upd["UpdateDriver.cs<br/>(DriversManagement)"]
-        CO_Ord["AddOrder.cs<br/>(CargoOrderingManager)"]
+        CO_Ord["AddOrder.cs<br/>(OrderingManagement)"]
     end
 
     subgraph Exchanges ["🐰 RabbitMQ Fanout Exchanges"]
@@ -202,8 +202,8 @@ flowchart LR
     end
 
     subgraph Consumers ["📝 Споживачі подій"]
-        Cons_Blog["SyncDriver.cs<br/>(DriversBlogManagement)"]
-        Cons_Ord["SyncDriverInOrdering.cs<br/>(CargoOrderingManager)"]
+        Cons_Blog["SyncDriver.cs<br/>(BlogManagement)"]
+        Cons_Ord["SyncDriverInOrdering.cs<br/>(OrderingManagement)"]
     end
 
     DM_Add -->|Publish IDriverCreated| Ex1
@@ -223,16 +223,16 @@ flowchart LR
 
 | Подія / Інтерфейс | Продюсер (Хто публікує) | Обмінник (Exchange) | Черга (Queue) | Споживач (Хто вичитує) | Що відбувається в БД |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| **`IDriverCreated`**<br/>([DriverCreated.cs#L26](../SharedKernel/DriverCreated.cs#L26)) | `DriversManagement`<br/>[AddDriver.cs#L85](../DriversManagement/src/DriversManagement/Domain/Drivers/Features/AddDriver.cs#L85)<br/>*Реєстрація:* [DriverCreatedEndpointRegistration.cs#L28](../DriversManagement/src/DriversManagement/Extensions/Services/ProducerRegistrations/DriverCreatedEndpointRegistration.cs#L28) | `driver-created`<br/>*(Type: Fanout)* | `sync-updated-driver` | `DriversBlogManagement`<br/>[SyncDriver.cs#L56](../DriversBlogManagement/src/DriversBlogManagement/Domain/SyncDriver.cs#L56)<br/>*Реєстрація:* [SyncPatientEndpointRegistration.cs#L33](../DriversBlogManagement/src/DriversBlogManagement/Extensions/Services/ConsumerRegistrations/SyncPatientEndpointRegistration.cs#L33) | Створення тіньового запису водія в базі блогу (таблиця `drivers` у `dev_driversblogmanagement`) |
-| **`IDriverCreated`**<br/>([DriverCreated.cs#L26](../SharedKernel/DriverCreated.cs#L26)) | `DriversManagement`<br/>[AddDriver.cs#L85](../DriversManagement/src/DriversManagement/Domain/Drivers/Features/AddDriver.cs#L85) | `driver-created`<br/>*(Type: Fanout)* | `ordering-sync-driver` | `CargoOrderingManager`<br/>[SyncDriverInOrdering.cs#L52](../CargoOrderingManager/src/CargoOrderingManager/Domain/Drivers/Consumers/SyncDriverInOrdering.cs#L52)<br/>*Реєстрація:* [SyncDriverInOrderingEndpointRegistration.cs#L33](../CargoOrderingManager/src/CargoOrderingManager/Extensions/Services/ConsumerRegistrations/SyncDriverInOrderingEndpointRegistration.cs#L33) | Створення тіньового запису водія в базі замовлень (таблиця `drivers` у `dev_cargoorderingmanager`) |
-| **`IDriverUpdated`**<br/>([DriverUpdated.cs#L20](../SharedKernel/DriverUpdated.cs#L20)) | `DriversManagement`<br/>[UpdateDriver.cs#L75](../DriversManagement/src/DriversManagement/Domain/Drivers/Features/UpdateDriver.cs#L75)<br/>*Реєстрація:* [DriverUpdatedEndpointRegistration.cs#L27](../DriversManagement/src/DriversManagement/Extensions/Services/ProducerRegistrations/DriverUpdatedEndpointRegistration.cs#L27) | `driver-updated`<br/>*(Type: Fanout)* | `sync-updated-driver` | `DriversBlogManagement`<br/>[SyncDriver.cs#L81](../DriversBlogManagement/src/DriversBlogManagement/Domain/SyncDriver.cs#L81) | Оновлення ПІБ водія в базі блогу для відображення під постами |
-| **`IDriverUpdated`**<br/>([DriverUpdated.cs#L20](../SharedKernel/DriverUpdated.cs#L20)) | `DriversManagement`<br/>[UpdateDriver.cs#L75](../DriversManagement/src/DriversManagement/Domain/Drivers/Features/UpdateDriver.cs#L75) | `driver-updated`<br/>*(Type: Fanout)* | `ordering-sync-driver` | `CargoOrderingManager`<br/>[SyncDriverInOrdering.cs#L75](../CargoOrderingManager/src/CargoOrderingManager/Domain/Drivers/Consumers/SyncDriverInOrdering.cs#L75) | Оновлення контактних даних водія в базі замовлень |
-| **`IOrderCreated`**<br/>([OrderMessages.cs#L21](../SharedKernel/OrderMessages.cs#L21)) | `CargoOrderingManager`<br/>[AddOrder.cs#L68](../CargoOrderingManager/src/CargoOrderingManager/Domain/Orders/Features/AddOrder.cs#L68)<br/>*Реєстрація:* [OrderCreatedEndpointRegistration.cs#L23](../CargoOrderingManager/src/CargoOrderingManager/Extensions/Services/ProducerRegistrations/OrderCreatedEndpointRegistration.cs#L23) | `order-created`<br/>*(Type: Fanout)* | — (черг поки немає; брокер відкидає повідомлення) | Розширюваний контракт для майбутніх модулів (Billing / Notifications) | Фіксація факту оформлення нового рейсу |
+| **`IDriverCreated`**<br/>([DriverCreated.cs#L26](../SharedKernel/DriverCreated.cs#L26)) | `DriversManagement`<br/>[AddDriver.cs#L85](../DriversManagement/src/DriversManagement/Domain/Drivers/Features/AddDriver.cs#L85)<br/>*Реєстрація:* [DriverCreatedEndpointRegistration.cs#L28](../DriversManagement/src/DriversManagement/Extensions/Services/ProducerRegistrations/DriverCreatedEndpointRegistration.cs#L28) | `driver-created`<br/>*(Type: Fanout)* | `sync-updated-driver` | `BlogManagement`<br/>[SyncDriver.cs#L56](../BlogManagement/src/BlogManagement/Domain/SyncDriver.cs#L56)<br/>*Реєстрація:* [SyncPatientEndpointRegistration.cs#L33](../BlogManagement/src/BlogManagement/Extensions/Services/ConsumerRegistrations/SyncPatientEndpointRegistration.cs#L33) | Створення тіньового запису водія в базі блогу (таблиця `drivers` у `dev_blogmanagement`) |
+| **`IDriverCreated`**<br/>([DriverCreated.cs#L26](../SharedKernel/DriverCreated.cs#L26)) | `DriversManagement`<br/>[AddDriver.cs#L85](../DriversManagement/src/DriversManagement/Domain/Drivers/Features/AddDriver.cs#L85) | `driver-created`<br/>*(Type: Fanout)* | `ordering-sync-driver` | `OrderingManagement`<br/>[SyncDriverInOrdering.cs#L52](../OrderingManagement/src/OrderingManagement/Domain/Drivers/Consumers/SyncDriverInOrdering.cs#L52)<br/>*Реєстрація:* [SyncDriverInOrderingEndpointRegistration.cs#L33](../OrderingManagement/src/OrderingManagement/Extensions/Services/ConsumerRegistrations/SyncDriverInOrderingEndpointRegistration.cs#L33) | Створення тіньового запису водія в базі замовлень (таблиця `drivers` у `dev_orderingmanagement`) |
+| **`IDriverUpdated`**<br/>([DriverUpdated.cs#L20](../SharedKernel/DriverUpdated.cs#L20)) | `DriversManagement`<br/>[UpdateDriver.cs#L75](../DriversManagement/src/DriversManagement/Domain/Drivers/Features/UpdateDriver.cs#L75)<br/>*Реєстрація:* [DriverUpdatedEndpointRegistration.cs#L27](../DriversManagement/src/DriversManagement/Extensions/Services/ProducerRegistrations/DriverUpdatedEndpointRegistration.cs#L27) | `driver-updated`<br/>*(Type: Fanout)* | `sync-updated-driver` | `BlogManagement`<br/>[SyncDriver.cs#L81](../BlogManagement/src/BlogManagement/Domain/SyncDriver.cs#L81) | Оновлення ПІБ водія в базі блогу для відображення під постами |
+| **`IDriverUpdated`**<br/>([DriverUpdated.cs#L20](../SharedKernel/DriverUpdated.cs#L20)) | `DriversManagement`<br/>[UpdateDriver.cs#L75](../DriversManagement/src/DriversManagement/Domain/Drivers/Features/UpdateDriver.cs#L75) | `driver-updated`<br/>*(Type: Fanout)* | `ordering-sync-driver` | `OrderingManagement`<br/>[SyncDriverInOrdering.cs#L75](../OrderingManagement/src/OrderingManagement/Domain/Drivers/Consumers/SyncDriverInOrdering.cs#L75) | Оновлення контактних даних водія в базі замовлень |
+| **`IOrderCreated`**<br/>([OrderMessages.cs#L21](../SharedKernel/OrderMessages.cs#L21)) | `OrderingManagement`<br/>[AddOrder.cs#L68](../OrderingManagement/src/OrderingManagement/Domain/Orders/Features/AddOrder.cs#L68)<br/>*Реєстрація:* [OrderCreatedEndpointRegistration.cs#L23](../OrderingManagement/src/OrderingManagement/Extensions/Services/ProducerRegistrations/OrderCreatedEndpointRegistration.cs#L23) | `order-created`<br/>*(Type: Fanout)* | — (черг поки немає; брокер відкидає повідомлення) | Розширюваний контракт для майбутніх модулів (Billing / Notifications) | Фіксація факту оформлення нового рейсу |
 
 #### Конфігурація підключення шини у кожному мікросервісі:
 * 🚚 **DriversManagement:** [MassTransitServiceExtension.cs#L36](../DriversManagement/src/DriversManagement/Extensions/Services/MassTransitServiceExtension.cs#L36) (продюсер: `DriverCreatedEndpoint`, `DriverUpdatedEndpoint`)
-* 📝 **DriversBlogManagement:** [MassTransitServiceExtension.cs#L36](../DriversBlogManagement/src/DriversBlogManagement/Extensions/Services/MassTransitServiceExtension.cs#L36) (споживач: `SyncPatientEndpoint`)
-* 📦 **CargoOrderingManager:** [MassTransitServiceExtension.cs#L36](../CargoOrderingManager/src/CargoOrderingManager/Extensions/Services/MassTransitServiceExtension.cs#L36) (продюсер `OrderCreatedEndpoint` + споживач `SyncDriverInOrderingEndpoint` + In-Memory fallback)
+* 📝 **BlogManagement:** [MassTransitServiceExtension.cs#L36](../BlogManagement/src/BlogManagement/Extensions/Services/MassTransitServiceExtension.cs#L36) (споживач: `SyncPatientEndpoint`)
+* 📦 **OrderingManagement:** [MassTransitServiceExtension.cs#L36](../OrderingManagement/src/OrderingManagement/Extensions/Services/MassTransitServiceExtension.cs#L36) (продюсер `OrderCreatedEndpoint` + споживач `SyncDriverInOrderingEndpoint` + In-Memory fallback)
 
 > 📖 **Детальний навчальний гайд:** [04_Patterns_Asynchronous_Messaging_MassTransit_RabbitMQ.md](04_Patterns_Asynchronous_Messaging_MassTransit_RabbitMQ.md)
 

@@ -29,7 +29,7 @@ namespace CargoDelivery.ApiGateway.Aggregators;
 ///   • Крок 1: Витягує відповідь кожного мікросервісу за його ключем (Route.Key) із ocelot.json.
 ///   • Крок 2 (Guard Check): Якщо сервіс водіїв (DriverProfile) повернув 404 Not Found —
 ///     відразу повертає клієнту змістовну помилку 404 Not Found.
-///   • Крок 3 (Критична залежність): Парсить список активних доставок із CargoOrderingManager
+///   • Крок 3 (Критична залежність): Парсить список активних доставок із OrderingManagement
 ///     та підраховує їхню кількість (totalActiveDeliveries).
 ///   • Крок 4 (Graceful Degradation — Плавна деградація): Якщо сервіс блогу (DriverBlogNotes)
 ///     впав або повернув помилку 5xx/timeout, шлюз НЕ валить весь запит! Замість цього він
@@ -102,7 +102,7 @@ public sealed class DriverSummaryDefinedAggregator : IDefinedAggregator
         var driverElement = await ParseJsonOrDefaultAsync(driverResp);
 
         // --------------------------------------------------------------------------------
-        // КРОК 3: Обробка доставок водія ("ActiveDeliveries" -> CargoOrderingManager :5003)
+        // КРОК 3: Обробка доставок водія ("ActiveDeliveries" -> OrderingManagement :5003)
         // --------------------------------------------------------------------------------
         JsonElement deliveriesElement = default;
         int deliveriesCount = 0;
@@ -118,7 +118,7 @@ public sealed class DriverSummaryDefinedAggregator : IDefinedAggregator
         }
 
         // --------------------------------------------------------------------------------
-        // КРОК 4: Обробка блогу водія ("DriverBlogNotes" -> DriversBlogManagement :5002)
+        // КРОК 4: Обробка блогу водія ("DriverBlogNotes" -> BlogManagement :5002)
         // Із застосуванням патерна GRACEFUL DEGRADATION (Плавна деградація)
         // --------------------------------------------------------------------------------
         // Блог водіїв є некритичною (другорядною) залежністю для логістичного екрана.

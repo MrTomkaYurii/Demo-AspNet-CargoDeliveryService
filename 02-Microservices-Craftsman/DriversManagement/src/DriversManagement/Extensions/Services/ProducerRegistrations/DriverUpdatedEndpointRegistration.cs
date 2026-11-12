@@ -17,7 +17,7 @@ namespace DriversManagement.Extensions.Services.ProducerRegistrations
     ///    Явно задає коротке ім'я обмінника замість повного імені типу.
     /// 2. ExchangeType = ExchangeType.Fanout:
     ///    Обмінник транслює повідомлення про зміну водія всім підписаним сервісам
-    ///    (DriversBlogManagement, CargoOrderingManager тощо) паралельно.
+    ///    (BlogManagement, OrderingManagement тощо) паралельно.
     /// ====================================================================================
     /// </summary>
     public static class DriverUpdatedEndpointRegistration

@@ -3,7 +3,7 @@ namespace CargoDelivery.HttpAggregator.Domain.Clients;
 using CargoDelivery.HttpAggregator.Domain.Dtos;
 
 /// <summary>
-/// Інтерфейс типізованого HTTP-клієнта до мікросервісу CargoOrderingManager.
+/// Інтерфейс типізованого HTTP-клієнта до мікросервісу OrderingManagement.
 /// </summary>
 public interface ICargoOrderApiClient
 {

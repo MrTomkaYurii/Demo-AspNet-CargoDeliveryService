@@ -13,7 +13,7 @@
 ---
 
 ## 📌 Інструкція для додавання нових презентацій (Markdown / PPTX):
-1. **Для нових модулів** (наприклад, `CargoOrderingService`, `DriversBlogManagement`, `KeycloakPulumiAuth`) створюйте файл презентації за шаблоном:
+1. **Для нових модулів** (наприклад, `CargoOrderingService`, `BlogManagement`, `KeycloakPulumiAuth`) створюйте файл презентації за шаблоном:
    - `02-CargoOrdering-CQRS-MediatR-Masterclass.md` (або відповідний `.pptx`).
 2. Якщо ви додаєте класичний файл презентації PowerPoint (`.pptx`), зберігайте його безпосередньо в цій теці:
    - `docs/Presentations/01-Ntier-Architecture.pptx`

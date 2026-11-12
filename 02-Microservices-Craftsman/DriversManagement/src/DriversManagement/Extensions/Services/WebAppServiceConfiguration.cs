@@ -9,7 +9,7 @@ using Hellang.Middleware.ProblemDetails.Mvc;
 using Microsoft.Extensions.DependencyInjection;
 using System.Reflection;
 using Ordering.Extensions.Services;
-using DriversBlogManagement;
+using BlogManagement;
 
 public static class WebAppServiceConfiguration
 {
@@ -46,19 +46,19 @@ public static class WebAppServiceConfiguration
         builder.Services.AddSwaggerExtension(builder.Configuration);
 
         // ====================================================================================
-        // ⚡ gRPC-КЛІЄНТ ДО DriversBlogManagement (контракт Driver.proto, GrpcServices="Client")
+        // ⚡ gRPC-КЛІЄНТ ДО BlogManagement (контракт Driver.proto, GrpcServices="Client")
         // ------------------------------------------------------------------------------------
         // AddGrpcClient під капотом використовує IHttpClientFactory, тому на нього ТАКОЖ діють
         // глобальні налаштування ServiceDefaults (Service Discovery + стандартний конвеєр Polly).
-        // Логічне ім'я "driversblogmanagement" резолвиться через змінну
-        // services__driversblogmanagement__https__0, яку інжектує AppHost (.WithReference(blogApi)).
+        // Логічне ім'я "blogmanagement" резолвиться через змінну
+        // services__blogmanagement__https__0, яку інжектує AppHost (.WithReference(blogApi)).
         // gRPC працює поверх HTTP/2, тому беремо HTTPS-ендпоінт (HTTP/2 узгоджується через TLS ALPN).
         // Якщо сервіс запущено БЕЗ Aspire, використовується адреса з секції GrpcServer:Address.
         // ====================================================================================
         builder.Services.AddGrpcClient<DriverRpc.DriverRpcClient>(options =>
         {
-            var grpcAddress = builder.Configuration["services:driversblogmanagement:https:0"] is not null
-                ? "https://driversblogmanagement"
+            var grpcAddress = builder.Configuration["services:blogmanagement:https:0"] is not null
+                ? "https://blogmanagement"
                 : builder.Configuration.GetSection("GrpcServer")["Address"] ?? "https://localhost:5002";
 
             options.Address = new Uri(grpcAddress);
@@ -71,19 +71,19 @@ public static class WebAppServiceConfiguration
         // 🌐 РЕЄСТРАЦІЯ ТИПІЗОВАНИХ HTTP-КЛІЄНТІВ ДЛЯ GATEWAY AGGREGATOR / BFF
         // ------------------------------------------------------------------------------------
         // Використовуємо IHttpClientFactory, .NET Aspire Service Discovery та Polly Resilience:
-        // 1. "https+http://cargoorderingmanager"  - логічне ім'я, резолвиться Aspire Service Discovery
+        // 1. "https+http://orderingmanagement"  - логічне ім'я, резолвиться Aspire Service Discovery
         //    ("https+http" = спершу HTTPS-ендпоінт, якщо його немає — HTTP).
-        // 2. "https+http://driversblogmanagement" - аналогічно.
+        // 2. "https+http://blogmanagement" - аналогічно.
         // 3. Стандартний конвеєр Polly (Retry, Circuit Breaker, Timeout) ВЖЕ доданий глобально
         //    через builder.AddServiceDefaults() → ConfigureHttpClientDefaults. Повторний виклик
         //    .AddStandardResilienceHandler() тут вклав би один конвеєр в інший і помножив повтори.
         // ====================================================================================
         builder.Services.AddHttpClient<DriversManagement.Domain.Drivers.Services.Http.ICargoOrderingApiClient, DriversManagement.Domain.Drivers.Services.Http.CargoOrderingApiClient>(client =>
-            client.BaseAddress = new Uri("https+http://cargoorderingmanager"));
+            client.BaseAddress = new Uri("https+http://orderingmanagement"));
 
         // Блог — НЕКРИТИЧНА залежність дашборду, тож для нього короткий бюджет часу (див. SoftDependencyBudget)
         builder.Services.AddHttpClient<DriversManagement.Domain.Drivers.Services.Http.IDriversBlogApiClient, DriversManagement.Domain.Drivers.Services.Http.DriversBlogApiClient>(client =>
-                client.BaseAddress = new Uri("https+http://driversblogmanagement"))
+                client.BaseAddress = new Uri("https+http://blogmanagement"))
             .RemoveAllResilienceHandlers()
             .AddStandardResilienceHandler(SoftDependencyBudget);
     }

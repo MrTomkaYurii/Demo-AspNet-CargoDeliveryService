@@ -83,7 +83,7 @@
 
 
   <!--
-    gRPC CONTRACT-FIRST: DriversManagement НЕ посилається на проєкт DriversBlogManagement.
+    gRPC CONTRACT-FIRST: DriversManagement НЕ посилається на проєкт BlogManagement.
     Спільним є лише контракт Driver.proto (єдине джерело правди). Grpc.Tools компілює його
     тут у режимі GrpcServices="Client" — генерується тільки клієнт DriverRpc.DriverRpcClient.
     Раніше тут був ProjectReference на весь сервіс блогу: це тягнуло в процес чужі
@@ -91,7 +91,7 @@
     класичний "розподілений моноліт".
   -->
   <ItemGroup>
-    <Protobuf Include="..\..\..\DriversBlogManagement\src\DriversBlogManagement\Domain\Drivers\Protos\Driver.proto" GrpcServices="Client" Link="Protos\Driver.proto" />
+    <Protobuf Include="..\..\..\BlogManagement\src\BlogManagement\Domain\Drivers\Protos\Driver.proto" GrpcServices="Client" Link="Protos\Driver.proto" />
   </ItemGroup>
 
 </Project>

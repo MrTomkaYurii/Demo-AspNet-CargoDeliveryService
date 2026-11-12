@@ -12,7 +12,7 @@ using Microsoft.Extensions.Logging;
 /// АРХІТЕКТУРНІ ОСОБЛИВОСТІ:
 ///
 /// 1. ВЗАЄМОДІЯ З СЕРВІСОМ ЧЕРЕЗ .NET ASPIRE SERVICE DISCOVERY:
-///    Адресація сервісу налаштовується як "http://driversblogmanagement".
+///    Адресація сервісу налаштовується як "http://blogmanagement".
 ///    У продакшені або при тестуванні в Aspire AppHost ім'я автоматично мапиться
 ///    на внутрішню адресу відповідного контейнера/процесу.
 ///
@@ -78,14 +78,14 @@ public sealed class DriversBlogApiClient : IDriversBlogApiClient
         catch (HttpRequestException ex)
         {
             _logger.LogWarning(ex, 
-                "Не вдалося отримати пости з DriversBlogManagement для водія {DriverId}. Статус: {StatusCode}", 
+                "Не вдалося отримати пости з BlogManagement для водія {DriverId}. Статус: {StatusCode}", 
                 driverId, ex.StatusCode);
             
             throw; // Прокидаємо для обробки у SafeFetchAsync всередині CQRS Handler
         }
         catch (OperationCanceledException)
         {
-            _logger.LogWarning("Запит до DriversBlogManagement скасовано.");
+            _logger.LogWarning("Запит до BlogManagement скасовано.");
             throw;
         }
     }

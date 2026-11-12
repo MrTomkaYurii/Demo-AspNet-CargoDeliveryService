@@ -9,8 +9,8 @@
 | Мікросервіс / Проєкт | Опис | Архітектурний стек |
 | :--- | :--- | :--- |
 | **[`DriversManagement`](02-02-Communication-Documentation/DriversManagement-README.md)** | Основний сервіс обліку водіїв, автопарку, компаній та технічного обслуговування | Clean Architecture, CQRS, MediatR, gRPC Client, MassTransit Publisher (.NET 10) |
-| **[`CargoOrderingManager`](02-02-Communication-Documentation/CargoOrderingManager-README.md)** | Сервіс керування замовленнями вантажів, доставками та відстеженням маршрутів | Clean Architecture, MediatR, EF Core, MassTransit Publisher & Consumer (.NET 10) |
-| **[`DriversBlogManagement`](02-02-Communication-Documentation/DriversBlogManagement-README.md)** | Сервіс блогу водіїв, постів, коментарів, лайків та соціальної взаємодії | Clean Architecture, CQRS, MediatR, gRPC Server (`DriverRpcService`), MassTransit Consumer (.NET 10) |
+| **[`OrderingManagement`](02-02-Communication-Documentation/OrderingManagement-README.md)** | Сервіс керування замовленнями вантажів, доставками та відстеженням маршрутів | Clean Architecture, MediatR, EF Core, MassTransit Publisher & Consumer (.NET 10) |
+| **[`BlogManagement`](02-02-Communication-Documentation/BlogManagement-README.md)** | Сервіс блогу водіїв, постів, коментарів, лайків та соціальної взаємодії | Clean Architecture, CQRS, MediatR, gRPC Server (`DriverRpcService`), MassTransit Consumer (.NET 10) |
 | **`SharedKernel`** | Спільне ядро подій та контрактів між мікросервісами | `IDriverCreated`, `IDriverUpdated`, `IOrderCreated`, `IOrderAssignedToDriver` |
 | **`CargoDelivery.HttpAggregator`** | Виділений Gateway Aggregator (Scatter-Gather) + лабораторія Polly (Retry / Timeout / Circuit Breaker) | ASP.NET Core, Typed HttpClients, `Task.WhenAll`, Service Discovery, Polly v8 (.NET 10) |
 | **`CargoDelivery.AppHost`** | Диригент оркестрації .NET Aspire: запуск RabbitMQ, SQL Server та 4 API (9 ресурсів) | .NET Aspire 13.6, Full Orchestration, C# Application Model (.NET 10) |
@@ -24,7 +24,7 @@
 dotnet run --project "02-Microservices-Craftsman\Aspire\CargoDelivery.AppHost\CargoDelivery.AppHost.csproj"
 ```
 * Дашборд Aspire: `https://localhost:17048` (URL з токеном входу друкується в консолі).
-* Сервіси (Swagger): DriversManagement `https://localhost:5001/swagger`, DriversBlogManagement `:5002/swagger`, CargoOrderingManager `:5003/swagger`, HttpAggregator `https://localhost:57390/swagger`.
+* Сервіси (Swagger): DriversManagement `https://localhost:5001/swagger`, BlogManagement `:5002/swagger`, OrderingManagement `:5003/swagger`, HttpAggregator `https://localhost:57390/swagger`.
 * Бази наповнюються демо-даними автоматично (Bogus): 50 водіїв, 30 компаній, 15 вантажівок, 50 постів, 50 замовлень із доставками — водії реплікуються між сервісами через RabbitMQ ([як це працює](02-01-Aspire-Documentation/01_Aspire_Orchestration_AppHost_DeepDive.md#section-9)).
 * Готові запити для всіх сценаріїв: [CargoDelivery.HttpAggregator.http](CargoDelivery.HttpAggregator/CargoDelivery.HttpAggregator.http).
 * ⚠️ Авторизацію (Keycloak / HeimGuard) для навчального стенду вимкнено — усі такі місця позначені `// [AUTH-DISABLED]`.
@@ -62,8 +62,8 @@ dotnet run --project "02-Microservices-Craftsman\Aspire\CargoDelivery.AppHost\Ca
 ```mermaid
 flowchart LR
     DM["🚚 DriversManagement"]
-    DB["📝 DriversBlogManagement"]
-    CO["📦 CargoOrderingManager"]
+    DB["📝 BlogManagement"]
+    CO["📦 OrderingManagement"]
 
     AGG["🛡️ CargoDelivery.HttpAggregator"]
 
@@ -83,8 +83,8 @@ flowchart LR
 
 Модульні та функціональні тести блоку:
 * `DriversManagement.UnitTests`: **57 passed**
-* `DriversBlogManagement.UnitTests`: **49 passed**
-* `CargoOrderingManager.UnitTests`: **37 passed** (.NET 10)
+* `BlogManagement.UnitTests`: **49 passed**
+* `OrderingManagement.UnitTests`: **37 passed** (.NET 10)
 * `CargoDelivery.HttpAggregator.Tests`: **6 passed** (3 юніт + 3 функціональні)
 * **Загалом у Блоці 2:** **149 тестів проходять успішно (0 помилок)**.
 

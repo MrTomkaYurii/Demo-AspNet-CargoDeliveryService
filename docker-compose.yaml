@@ -33,7 +33,7 @@ services:
     depends_on:
       - keycloakdb
 
-  driversblogmanagement-db:
+  blogmanagement-db:
     image: mcr.microsoft.com/mssql/server
     restart: always
     ports:
@@ -41,10 +41,10 @@ services:
     environment:
       - DB_USER=SA
       - SA_PASSWORD=#localDockerPassword#
-      - DB_CONTAINER_NAME=dev_driversblogmanagement
+      - DB_CONTAINER_NAME=dev_blogmanagement
       - ACCEPT_EULA=Y
     volumes:
-      - driversblogmanagement-data:/var/lib/sqlserver/data
+      - blogmanagement-data:/var/lib/sqlserver/data
   driversmanagement-db:
     image: mcr.microsoft.com/mssql/server
     restart: always
@@ -76,5 +76,5 @@ services:
 volumes:
   # compose volumes marker - do not delete
   keycloak-data:
-  driversblogmanagement-data:
+  blogmanagement-data:
   driversmanagement-data:

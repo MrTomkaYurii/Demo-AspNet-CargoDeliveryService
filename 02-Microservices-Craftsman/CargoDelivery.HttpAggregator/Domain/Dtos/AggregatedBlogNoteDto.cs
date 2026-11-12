@@ -1,7 +1,7 @@
 namespace CargoDelivery.HttpAggregator.Domain.Dtos;
 
 /// <summary>
-/// Агреговані дані нотатки / поста з мікросервісу DriversBlogManagement.
+/// Агреговані дані нотатки / поста з мікросервісу BlogManagement.
 /// </summary>
 public sealed class AggregatedBlogNoteDto
 {

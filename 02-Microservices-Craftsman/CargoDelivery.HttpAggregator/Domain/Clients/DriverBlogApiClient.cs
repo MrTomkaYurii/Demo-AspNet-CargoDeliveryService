@@ -9,7 +9,7 @@ using Microsoft.Extensions.Logging;
 /// 📝 DRIVER BLOG API TYPED HTTP CLIENT (.NET 10 & IHttpClientFactory)
 /// ------------------------------------------------------------------------------------
 /// ПРИЗНАЧЕННЯ:
-/// Опитує мікросервіс DriversBlogManagement за адресою "https+http://driversblogmanagement"
+/// Опитує мікросервіс BlogManagement за адресою "https+http://blogmanagement"
 /// і повертає "дорожні замітки" водія (останні пости блогу).
 ///
 /// РОЛЬ В АГРЕГАЦІЇ:
@@ -44,7 +44,7 @@ public sealed class DriverBlogApiClient : IDriverBlogApiClient
         }
         catch (HttpRequestException ex)
         {
-            _logger.LogWarning(ex, "Помилка зв'язку з DriversBlogManagement для водія {DriverId}.", driverId);
+            _logger.LogWarning(ex, "Помилка зв'язку з BlogManagement для водія {DriverId}.", driverId);
             // Прокидаємо виняток, щоб агрегатор зафіксував факт деградації (IsDegraded = true)
             throw;
         }
