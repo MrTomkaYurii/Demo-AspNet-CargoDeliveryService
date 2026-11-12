@@ -10,6 +10,7 @@ namespace DuendeIdentityInMemory
                 new IdentityResources.OpenId(),
                 new IdentityResources.Profile(),
                 new IdentityResources.Email(),
+                new IdentityResource("roles", "User Roles", new[] { "role" }),
             };
 
         public static IEnumerable<ApiScope> ApiScopes =>
@@ -34,14 +35,17 @@ namespace DuendeIdentityInMemory
             new ApiResource("drivers_management")
             {
                 Scopes = new List<string> { "drivers_management", "cargo_ordering", "blog_management" },
+                UserClaims = { "role" },
             },
             new ApiResource("cargo_ordering")
             {
                 Scopes = new List<string> { "cargo_ordering", "drivers_management" },
+                UserClaims = { "role" },
             },
             new ApiResource("blog_management")
             {
                 Scopes = new List<string> { "blog_management" },
+                UserClaims = { "role" },
             }
         };
 
@@ -102,7 +106,7 @@ namespace DuendeIdentityInMemory
                     RequireClientSecret = false,
                     RedirectUris = { "https://localhost:5000/swagger/oauth2-redirect.html" },
                     AllowOfflineAccess = true,
-                    AllowedScopes = { "openid", "profile", "email", "drivers_management", "cargo_ordering", "blog_management" }
+                    AllowedScopes = { "openid", "profile", "email", "roles", "drivers_management", "cargo_ordering", "blog_management" }
                 }
             };
     }

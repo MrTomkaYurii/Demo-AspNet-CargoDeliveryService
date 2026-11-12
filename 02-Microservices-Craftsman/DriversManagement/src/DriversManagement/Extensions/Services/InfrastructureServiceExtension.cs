@@ -35,24 +35,8 @@ public static class ServiceRegistration
 
         services.SetupHangfire(env);
 
-        // ====================================================================================
-        // 🔐 ПІДКЛЮЧЕННЯ БАГАТОСХЕМНОЇ АВТЕНТИФІКАЦІЇ (03.1 SimpleJwt / 03.2 Duende / 03.3 Keycloak)
-        // ------------------------------------------------------------------------------------
-        // Замість одного жорстко зашитого провайдера підключаємо фасад AddCargoMultiAuth(...),
-        // який маршрутизує перевірку токена за полем `iss` через SmartAuthPolicy.
-        // ====================================================================================
-        if (!env.IsEnvironment(Consts.Testing.FunctionalTestingEnvName))
-        {
-            services.AddCargoMultiAuth(configuration, env);
-        }
-
-        services.AddAuthorization(options =>
-        {
-        });
-
-        services.AddHeimGuard<UserPolicyHandler>()
-            .MapAuthorizationPolicies()
-            .AutomaticallyCheckPermissions();
+        // Примітка: автентифікація (03.1 Simple JWT), авторизація та HeimGuard налаштовані
+        // напряму у Program.cs цього мікросервісу для наочності демонстрації.
     }
 }
     

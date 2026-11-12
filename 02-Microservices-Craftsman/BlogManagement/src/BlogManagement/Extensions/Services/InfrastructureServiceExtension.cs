@@ -35,21 +35,8 @@ public static class ServiceRegistration
 
         services.SetupHangfire(env);
 
-        // ====================================================================================
-        // 🔐 ПІДКЛЮЧЕННЯ БАГАТОСХЕМНОЇ АВТЕНТИФІКАЦІЇ (03.1 SimpleJwt / 03.2 Duende / 03.3 Keycloak)
-        // ====================================================================================
-        if (!env.IsEnvironment(Consts.Testing.FunctionalTestingEnvName))
-        {
-            services.AddCargoMultiAuth(configuration, env);
-        }
-
-        services.AddAuthorization(options =>
-        {
-        });
-
-        services.AddHeimGuard<UserPolicyHandler>()
-            .MapAuthorizationPolicies()
-            .AutomaticallyCheckPermissions();
+        // Примітка: автентифікація (03.2 Duende IdentityServer), авторизація з ролями та HeimGuard
+        // налаштовані напряму у Program.cs цього мікросервісу.
     }
 }
     

@@ -23,7 +23,6 @@
 // ====================================================================================
 
 using CargoDelivery.ApiGateway.Aggregators;
-using CargoDelivery.ServiceDefaults.Auth;
 using Ocelot.DependencyInjection;
 using Ocelot.Middleware;
 
@@ -60,7 +59,30 @@ builder.Services.AddSwaggerGen(options =>
                       "та вбудована агрегація запитів (/gateway/ocelot-aggregate/{driverId} і /gateway/custom-aggregate/{driverId})."
     });
 
-    options.AddCargoSwaggerMultiAuth(builder.Configuration);
+    // Просте поле Bearer у Swagger шлюзу для прокидання токена до цільових мікросервісів
+    options.AddSecurityDefinition("Bearer", new Microsoft.OpenApi.Models.OpenApiSecurityScheme
+    {
+        Name = "Authorization",
+        Type = Microsoft.OpenApi.Models.SecuritySchemeType.Http,
+        Scheme = "bearer",
+        BearerFormat = "JWT",
+        In = Microsoft.OpenApi.Models.ParameterLocation.Header,
+        Description = "Вставте JWT-токен (від AuthorizationModuleAPI, Duende або Keycloak) для проксіювання через Ocelot."
+    });
+    options.AddSecurityRequirement(new Microsoft.OpenApi.Models.OpenApiSecurityRequirement
+    {
+        {
+            new Microsoft.OpenApi.Models.OpenApiSecurityScheme
+            {
+                Reference = new Microsoft.OpenApi.Models.OpenApiReference
+                {
+                    Type = Microsoft.OpenApi.Models.ReferenceType.SecurityScheme,
+                    Id = "Bearer"
+                }
+            },
+            Array.Empty<string>()
+        }
+    });
 
     var xmlFile = Path.Combine(AppContext.BaseDirectory, $"{typeof(Program).Assembly.GetName().Name}.xml");
     if (File.Exists(xmlFile))

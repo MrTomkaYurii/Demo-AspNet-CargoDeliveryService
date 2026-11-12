@@ -1,8 +1,5 @@
 namespace OrderingManagement.Extensions.Application;
 
-using OrderingManagement.Middleware;
-using OrderingManagement.Services;
-using Configurations;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.Configuration;
 using Resources;
@@ -17,12 +14,12 @@ public static class SwaggerAppExtension
             app.UseSwagger();
             app.UseSwaggerUI(config =>
             {
-                config.SwaggerEndpoint("/swagger/v1/swagger.json", "");
+                config.SwaggerEndpoint("/swagger/v1/swagger.json", "OrderingManagement v1");
                 config.DocExpansion(DocExpansion.None);
-            var authOptions = configuration.GetAuthOptions();
-            config.OAuthClientId(authOptions.ClientId);
-            config.OAuthClientSecret(authOptions.ClientSecret);
-            config.OAuthUsePkce();
+                // Налаштування PKCE для Swagger-клієнта Keycloak (03.3, Realm DevRealmDrivers)
+                config.OAuthClientId("drivers_management.swagger");
+                config.OAuthAppName("OrderingManagement - Keycloak PKCE");
+                config.OAuthUsePkce();
             });
         }
     }

@@ -2,13 +2,18 @@ using Destructurama;
 using Serilog;
 using Serilog.Extensions.Logging;
 using Hangfire;
+using HeimGuard;
 using Hellang.Middleware.ProblemDetails;
 using BlogManagement.Extensions.Application;
 using BlogManagement.Extensions.Services;
 using BlogManagement.Databases;
 using BlogManagement.Domain.Drivers.Services;
+using BlogManagement.Resources;
 using BlogManagement.Resources.HangfireUtilities;
+using BlogManagement.Services;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.Extensions.Hosting;
+using Microsoft.OpenApi.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -32,6 +37,89 @@ var builder = WebApplication.CreateBuilder(args);
 
     builder.Host.UseSerilog(providers: serilogProviders);
     builder.ConfigureServices();
+
+    // ====================================================================================
+    // 🏛️ 03.2 АВТЕНТИФІКАЦІЯ ТА АВТОРИЗАЦІЯ: DUENDE IDENTITYSERVER (OIDC / OAuth 2.0 + PKCE)
+    // ------------------------------------------------------------------------------------
+    // Усі налаштування безпеки винесені прямо у Program.cs для повної прозорості.
+    // BlogManagement демонструє підхід 03.2:
+    //   • Виділений STS (DuendeIdentityInMemory), що видає токени формату "at+jwt" (RS256).
+    //   • Публічні ключі (JWKS) завантажуються автоматично через OIDC Discovery.
+    //   • Підтримка ролей (клейм "role" → RoleClaimType) для політик авторизації та HeimGuard.
+    // ====================================================================================
+    var duendeAuthority = (builder.Configuration["Auth:Duende:Authority"]
+                           ?? "https://localhost:5001").TrimEnd('/');
+
+    if (!builder.Environment.IsEnvironment(Consts.Testing.FunctionalTestingEnvName))
+    {
+        builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+            .AddJwtBearer(options =>
+            {
+                options.Authority = duendeAuthority;
+                options.RequireHttpsMetadata = !builder.Environment.IsDevelopment();
+
+                // Duende випускає токени з типом "at+jwt" (RFC 9068).
+                // За замовчуванням MapInboundClaims = true автоматично мапить клейм "role" у ClaimTypes.Role.
+                options.TokenValidationParameters.ValidateAudience = false;
+                options.TokenValidationParameters.ValidTypes = new[] { "at+jwt", "JWT" };
+                options.TokenValidationParameters.NameClaimType = "name";
+
+                if (builder.Environment.IsDevelopment())
+                {
+                    // У локальному Aspire-стенді дозволяємо dev-сертифікат для backchannel-запиту JWKS
+                    options.BackchannelHttpHandler = new HttpClientHandler
+                    {
+                        ServerCertificateCustomValidationCallback = HttpClientHandler.DangerousAcceptAnyServerCertificateValidator
+                    };
+                }
+            });
+    }
+
+    // Налаштування рольової авторизації (для клеймів із Duende: SuperAdmin / User) та HeimGuard
+    builder.Services.AddAuthorization(options =>
+    {
+        options.AddPolicy("RequireAdminRole", policy => policy.RequireRole("SuperAdmin"));
+        options.AddPolicy("RequireUserRole", policy => policy.RequireRole("User", "SuperAdmin"));
+    });
+    builder.Services.AddHeimGuard<UserPolicyHandler>()
+        .MapAuthorizationPolicies()
+        .AutomaticallyCheckPermissions();
+
+    // Налаштування Swagger UI для входу через Duende IdentityServer (Authorization Code + PKCE)
+    builder.Services.ConfigureSwaggerGen(config =>
+    {
+        config.AddSecurityDefinition("oauth2", new OpenApiSecurityScheme
+        {
+            Type = SecuritySchemeType.OAuth2,
+            Description = "【03.2 Duende OIDC】 Authorization Code + PKCE (alice/alice — SuperAdmin, bob/bob — User).",
+            Flows = new OpenApiOAuthFlows
+            {
+                AuthorizationCode = new OpenApiOAuthFlow
+                {
+                    AuthorizationUrl = new Uri($"{duendeAuthority}/connect/authorize"),
+                    TokenUrl = new Uri($"{duendeAuthority}/connect/token"),
+                    Scopes = new Dictionary<string, string>
+                    {
+                        { "openid", "OpenID Connect" },
+                        { "profile", "Профіль користувача" },
+                        { "roles", "Ролі користувача (role)" },
+                        { "blog_management", "Доступ до BlogManagement API" }
+                    }
+                }
+            }
+        });
+
+        config.AddSecurityRequirement(new OpenApiSecurityRequirement
+        {
+            {
+                new OpenApiSecurityScheme
+                {
+                    Reference = new OpenApiReference { Type = ReferenceType.SecurityScheme, Id = "oauth2" }
+                },
+                new[] { "openid", "profile", "roles", "blog_management" }
+            }
+        });
+    });
 
 var app = builder.Build();
 

@@ -107,11 +107,7 @@ var cargoApi = builder.AddProject<Projects.OrderingManagement>("orderingmanageme
     // connectionName → змінна ConnectionStrings__OrderingManagement, яку читає ConnectionStringOptions сервісу
     .WithReference(cargoDb, connectionName: "OrderingManagement")
     .WithReference(rabbitmq)
-    .WithEnvironment("Auth__Mode", "Multi")
-    .WithEnvironment("Auth__SimpleJwt__Secret", "TOPSECRETKEYFORDRIVERMANAGEMENTSYSTEM")
-    .WithEnvironment("Auth__SimpleJwt__Issuer", "AuthorizationModuleAPI")
-    .WithEnvironment("Auth__SimpleJwt__Audience", "cargodelivery.microservices")
-    .WithEnvironment("Auth__Duende__Authority", duendeAuth.GetEndpoint("https"))
+    // 🏢 03.3 OrderingManagement використовує Keycloak (Realm DevRealmDrivers) — див. OrderingManagement/Program.cs
     .WithEnvironment("Auth__Keycloak__Authority", keycloakRealmAuthority)
     // Health probe для Aspire: ресурс вважається "Healthy" лише коли GET /health повертає 200.
     // Саме на цей стан чекають залежні ресурси у .WaitFor(cargoApi).
@@ -130,12 +126,8 @@ var cargoApi = builder.AddProject<Projects.OrderingManagement>("orderingmanageme
 var blogApi = builder.AddProject<Projects.BlogManagement>("blogmanagement")
     .WithReference(blogDb, connectionName: "BlogManagement")
     .WithReference(rabbitmq)
-    .WithEnvironment("Auth__Mode", "Multi")
-    .WithEnvironment("Auth__SimpleJwt__Secret", "TOPSECRETKEYFORDRIVERMANAGEMENTSYSTEM")
-    .WithEnvironment("Auth__SimpleJwt__Issuer", "AuthorizationModuleAPI")
-    .WithEnvironment("Auth__SimpleJwt__Audience", "cargodelivery.microservices")
+    // 🏛️ 03.2 BlogManagement використовує Duende IdentityServer (OIDC + ролі) — див. BlogManagement/Program.cs
     .WithEnvironment("Auth__Duende__Authority", duendeAuth.GetEndpoint("https"))
-    .WithEnvironment("Auth__Keycloak__Authority", keycloakRealmAuthority)
     .WithHttpHealthCheck("/health")
     .WaitFor(blogDb)
     .WaitFor(rabbitmq);
@@ -156,12 +148,10 @@ var driversApi = builder.AddProject<Projects.DriversManagement>("driversmanageme
     .WithReference(rabbitmq)
     .WithReference(blogApi)
     .WithReference(cargoApi)
-    .WithEnvironment("Auth__Mode", "Multi")
+    // 🔑 03.1 DriversManagement використовує простий Custom JWT (AuthorizationModuleAPI) — див. DriversManagement/Program.cs
     .WithEnvironment("Auth__SimpleJwt__Secret", "TOPSECRETKEYFORDRIVERMANAGEMENTSYSTEM")
     .WithEnvironment("Auth__SimpleJwt__Issuer", "AuthorizationModuleAPI")
     .WithEnvironment("Auth__SimpleJwt__Audience", "cargodelivery.microservices")
-    .WithEnvironment("Auth__Duende__Authority", duendeAuth.GetEndpoint("https"))
-    .WithEnvironment("Auth__Keycloak__Authority", keycloakRealmAuthority)
     .WithHttpHealthCheck("/health")
     .WaitFor(driversDb)
     .WaitFor(rabbitmq);

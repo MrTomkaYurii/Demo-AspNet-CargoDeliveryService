@@ -1,13 +1,20 @@
+using System.Text;
 using Destructurama;
 using Serilog;
 using Serilog.Extensions.Logging;
 using Hangfire;
+using HeimGuard;
 using Hellang.Middleware.ProblemDetails;
 using DriversManagement.Extensions.Application;
 using DriversManagement.Extensions.Services;
 using DriversManagement.Databases;
+using DriversManagement.Resources;
 using DriversManagement.Resources.HangfireUtilities;
+using DriversManagement.Services;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.Extensions.Hosting;
+using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi.Models;
 
 var builder = WebApplication.CreateBuilder(args);
     // ====================================================================================
@@ -31,6 +38,70 @@ var builder = WebApplication.CreateBuilder(args);
     builder.Host.UseSerilog(providers: serilogProviders);
 
     builder.ConfigureServices();
+
+    // ====================================================================================
+    // 🔑 03.1 АВТЕНТИФІКАЦІЯ ТА АВТОРИЗАЦІЯ: ПРОСТИЙ CUSTOM JWT (AuthorizationModuleAPI)
+    // ------------------------------------------------------------------------------------
+    // Усі налаштування безпеки винесені прямо у Program.cs для повної прозорості.
+    // DriversManagement демонструє підхід 03.1:
+    //   • Симетричний підпис HMAC-SHA256 (HS256) за спільним секретом Auth:SimpleJwt:Secret.
+    //   • Без OIDC Discovery / JWKS — токен перевіряється повністю локально.
+    //   • У функціональних тестах (FunctionalTesting) реальний JwtBearer пропускається.
+    // ====================================================================================
+    if (!builder.Environment.IsEnvironment(Consts.Testing.FunctionalTestingEnvName))
+    {
+        var jwtSection = builder.Configuration.GetSection("Auth:SimpleJwt");
+        var jwtSecret = jwtSection["Secret"] ?? "TOPSECRETKEYFORDRIVERMANAGEMENTSYSTEM";
+        var jwtIssuer = jwtSection["Issuer"] ?? "AuthorizationModuleAPI";
+        var jwtAudience = jwtSection["Audience"] ?? "cargodelivery.microservices";
+
+        builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+            .AddJwtBearer(options =>
+            {
+                options.TokenValidationParameters = new TokenValidationParameters
+                {
+                    ValidateIssuer = true,
+                    ValidIssuer = jwtIssuer,
+                    ValidateAudience = true,
+                    ValidAudience = jwtAudience,
+                    ValidateLifetime = true,
+                    ValidateIssuerSigningKey = true,
+                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.ASCII.GetBytes(jwtSecret)),
+                    ClockSkew = TimeSpan.FromMinutes(1)
+                };
+            });
+    }
+
+    // Реєстрація політик авторизації та HeimGuard (перевірка дозволів на рівні MediatR/контролерів)
+    builder.Services.AddAuthorization();
+    builder.Services.AddHeimGuard<UserPolicyHandler>()
+        .MapAuthorizationPolicies()
+        .AutomaticallyCheckPermissions();
+
+    // Налаштування Swagger UI для введення Bearer-токена, отриманого від AuthorizationModuleAPI
+    builder.Services.ConfigureSwaggerGen(config =>
+    {
+        config.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+        {
+            Name = "Authorization",
+            Type = SecuritySchemeType.Http,
+            Scheme = "bearer",
+            BearerFormat = "JWT",
+            In = ParameterLocation.Header,
+            Description = "【03.1 Simple JWT】 Вставте jwtToken, отриманий через POST /accounts/authenticate у AuthorizationModuleAPI."
+        });
+
+        config.AddSecurityRequirement(new OpenApiSecurityRequirement
+        {
+            {
+                new OpenApiSecurityScheme
+                {
+                    Reference = new OpenApiReference { Type = ReferenceType.SecurityScheme, Id = "Bearer" }
+                },
+                Array.Empty<string>()
+            }
+        });
+    });
 
 var app = builder.Build();
 

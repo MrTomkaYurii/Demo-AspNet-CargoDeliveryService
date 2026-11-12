@@ -1,8 +1,5 @@
 namespace BlogManagement.Extensions.Application;
 
-using BlogManagement.Middleware;
-using BlogManagement.Services;
-using Configurations;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.Configuration;
 using Resources;
@@ -17,12 +14,12 @@ public static class SwaggerAppExtension
             app.UseSwagger();
             app.UseSwaggerUI(config =>
             {
-                config.SwaggerEndpoint("/swagger/v1/swagger.json", "");
+                config.SwaggerEndpoint("/swagger/v1/swagger.json", "BlogManagement v1");
                 config.DocExpansion(DocExpansion.None);
-            var authOptions = configuration.GetAuthOptions();
-            config.OAuthClientId(authOptions.ClientId);
-            config.OAuthClientSecret(authOptions.ClientSecret);
-            config.OAuthUsePkce();
+                // Налаштування PKCE для Swagger-клієнта Duende IdentityServer (03.2)
+                config.OAuthClientId("craftsman.swagger");
+                config.OAuthAppName("BlogManagement - Duende PKCE");
+                config.OAuthUsePkce();
             });
         }
     }

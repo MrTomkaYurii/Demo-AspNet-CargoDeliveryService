@@ -1,9 +1,5 @@
 namespace DriversManagement.Extensions.Application;
 
-using CargoDelivery.ServiceDefaults.Auth;
-using DriversManagement.Middleware;
-using DriversManagement.Services;
-using Configurations;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.Configuration;
 using Resources;
@@ -20,7 +16,6 @@ public static class SwaggerAppExtension
             {
                 config.SwaggerEndpoint("/swagger/v1/swagger.json", "DriversManagement v1");
                 config.DocExpansion(DocExpansion.None);
-                config.UseCargoSwaggerMultiAuth(configuration);
             });
         }
     }
