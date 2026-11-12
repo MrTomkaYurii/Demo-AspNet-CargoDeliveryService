@@ -57,37 +57,7 @@ namespace DuendeIdentityInMemory
             //    options.Conventions.AuthorizeFolder("/ServerSideSessions", "admin"));
 
 
-            var keycloakAuthority = builder.Configuration["Keycloak:Authority"];
-            var authBuilder = builder.Services.AddAuthentication();
-
-            if (!string.IsNullOrWhiteSpace(keycloakAuthority))
-            {
-                // ================================================================================
-                // 🤝 03.3 ФЕДЕРАЦІЯ KEYCLOAK + DUENDE (External OIDC Identity Provider, опціонально)
-                // --------------------------------------------------------------------------------
-                // Реєструється лише коли задано Keycloak:Authority (наприклад, з Aspire AppHost).
-                // При автономному запуску Duende (03.2) цей блок не активується.
-                // ================================================================================
-                authBuilder.AddOpenIdConnect("keycloak", "Keycloak (Corporate SSO)", options =>
-                {
-                    options.SignInScheme = IdentityServerConstants.ExternalCookieAuthenticationScheme;
-                    options.SignOutScheme = IdentityServerConstants.SignoutScheme;
-                    options.SaveTokens = true;
-
-                    options.Authority = keycloakAuthority;
-                    options.ClientId = "duende.federation";
-                    options.ClientSecret = "duende-keycloak-secret";
-                    options.ResponseType = "code";
-                    options.RequireHttpsMetadata = !builder.Environment.IsDevelopment();
-
-                    options.Scope.Clear();
-                    options.Scope.Add("openid");
-                    options.Scope.Add("profile");
-                    options.Scope.Add("email");
-                    options.GetClaimsFromUserInfoEndpoint = true;
-                });
-            }
-
+            // Модуль 03.2 (DuendeIdentityInMemory) працює повністю автономно — без зовнішньої федерації.
             return builder.Build();
         }
 

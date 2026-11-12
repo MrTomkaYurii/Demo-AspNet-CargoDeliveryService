@@ -14,6 +14,50 @@
   },
   "clientScopes": [
     {
+      "name": "profile",
+      "description": "OpenID Connect built-in scope: profile",
+      "protocol": "openid-connect",
+      "attributes": { "include.in.token.scope": "true", "display.on.consent.screen": "true" },
+      "protocolMappers": [
+        {
+          "name": "username",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-attribute-mapper",
+          "consentRequired": false,
+          "config": {
+            "userinfo.token.claim": "true",
+            "user.attribute": "username",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "preferred_username",
+            "jsonType.label": "String"
+          }
+        }
+      ]
+    },
+    {
+      "name": "roles",
+      "description": "OpenID Connect scope for add user roles to the access token",
+      "protocol": "openid-connect",
+      "attributes": { "include.in.token.scope": "true", "display.on.consent.screen": "true" },
+      "protocolMappers": [
+        {
+          "name": "realm roles",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-realm-role-mapper",
+          "consentRequired": false,
+          "config": {
+            "multivalued": "true",
+            "userinfo.token.claim": "false",
+            "id.token.claim": "false",
+            "access.token.claim": "true",
+            "claim.name": "realm_access.roles",
+            "jsonType.label": "String"
+          }
+        }
+      ]
+    },
+    {
       "name": "drivers_management",
       "description": "Access to DriversManagement API",
       "protocol": "openid-connect",
@@ -81,39 +125,14 @@
       "directAccessGrantsEnabled": true,
       "protocol": "openid-connect",
       "redirectUris": [
-        "http://localhost:*/*",
-        "https://localhost:*/*"
+        "https://localhost:5003/*",
+        "http://localhost:5003/*",
+        "*"
       ],
       "webOrigins": [ "+" ],
       "attributes": {
         "pkce.code.challenge.method": "S256"
       },
-      "defaultClientScopes": [
-        "web-origins",
-        "acr",
-        "profile",
-        "roles",
-        "email",
-        "drivers_management",
-        "cargo_ordering",
-        "blog_management"
-      ]
-    },
-    {
-      "clientId": "duende.federation",
-      "name": "Duende IdentityServer OIDC Federation",
-      "enabled": true,
-      "publicClient": false,
-      "secret": "duende-keycloak-secret",
-      "standardFlowEnabled": true,
-      "directAccessGrantsEnabled": true,
-      "serviceAccountsEnabled": true,
-      "protocol": "openid-connect",
-      "redirectUris": [
-        "http://localhost:*/*",
-        "https://localhost:*/*"
-      ],
-      "webOrigins": [ "+" ],
       "defaultClientScopes": [
         "web-origins",
         "acr",

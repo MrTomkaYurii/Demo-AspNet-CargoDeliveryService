@@ -32,7 +32,9 @@ public class JwtUtils : IJwtUtils
 
     public string GenerateJwtToken(Account account)
     {
-        // generate token that is valid for 15 minutes
+        // Генеруємо Access Token (термін дії 60 хв) із симетричним підписом HMAC-SHA256 (Модуль 03.1).
+        // Клейми дублюються у стандартних JWT-іменах (sub, email) та ClaimTypes.* для повної сумісності
+        // з ICurrentUserService і UserPolicyHandler у бізнес-мікросервісі DriversManagement.
         var tokenHandler = new JwtSecurityTokenHandler();
         var key = Encoding.ASCII.GetBytes(_appSettings.Secret);
         var tokenDescriptor = new SecurityTokenDescriptor
@@ -52,6 +54,7 @@ public class JwtUtils : IJwtUtils
                 new Claim(ClaimTypes.Role, account.Role.ToString())
             }),
             Expires = DateTime.UtcNow.AddMinutes(60),
+            // Спільний секрет (Secret), Issuer та Audience мають збігатися з налаштуваннями JwtBearer у DriversManagement
             SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature),
             Issuer = _appSettings.Issuer,
             Audience = _appSettings.Audience

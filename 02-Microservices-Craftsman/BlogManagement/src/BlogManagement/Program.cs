@@ -48,7 +48,7 @@ var builder = WebApplication.CreateBuilder(args);
     //   • Підтримка ролей (клейм "role" → RoleClaimType) для політик авторизації та HeimGuard.
     // ====================================================================================
     var duendeAuthority = (builder.Configuration["Auth:Duende:Authority"]
-                           ?? "https://localhost:5001").TrimEnd('/');
+                           ?? "https://localhost:5012").TrimEnd('/');
 
     if (!builder.Environment.IsEnvironment(Consts.Testing.FunctionalTestingEnvName))
     {
@@ -150,6 +150,7 @@ app.MapDefaultEndpoints();
     app.UseSerilogRequestLogging();
     app.UseRouting();
 
+    // Конвеєр безпеки: перевірка OIDC-токена Duende (03.2) та рольових політик / HeimGuard
     app.UseAuthentication();
     app.UseAuthorization();
 

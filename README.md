@@ -111,5 +111,20 @@ dotnet test 01-Ntier-Drivers/NtierDrivers.UnitTests/NtierDrivers.UnitTests.cspro
 docker compose up -d
 ```
 - SQL Server: `localhost:1434`
-- Keycloak: `http://localhost:5000`
+- Keycloak: `http://localhost:5080`
 - Jaeger Tracing: `http://localhost:16686`
+
+---
+
+## 🌐 Карта портів платформи (.NET 10 Aspire)
+
+| Група | Сервіс | Порт | Призначення |
+| :--- | :--- | :--- | :--- |
+| **Gateway / BFF** | `CargoDelivery.ApiGateway` | `https://localhost:5000` | Ocelot API Gateway |
+| | `CargoDelivery.HttpAggregator` | `https://localhost:5005` | HTTP Aggregator (Scatter-Gather) |
+| **Мікросервіси** | `DriversManagement` (03.1) | `https://localhost:5001` | Водії (Simple JWT) |
+| | `BlogManagement` (03.2) | `https://localhost:5002` | Блог (Duende OIDC + ролі) |
+| | `OrderingManagement` (03.3) | `https://localhost:5003` | Закази / Замовлення (Keycloak IAM) |
+| **Auth-провайдери** | `AuthorizationModuleAPI` (03.1) | `https://localhost:5011` (`http://localhost:5111`) | Custom JWT API |
+| | `DuendeIdentityInMemory` (03.2) | `https://localhost:5012` | Duende IdentityServer |
+| | `Keycloak` (03.3 контейнер) | `http://localhost:5080` | Keycloak (`DevRealmDrivers`) |

@@ -10,23 +10,22 @@
 | :---: | :--- | :--- | :--- |
 | **03.1** | [03.1_Simple_JWT_AuthorizationModuleAPI.md](03.1_Simple_JWT_AuthorizationModuleAPI.md) | `AuthorizationModuleAPI` | Класичний Custom JWT (HMAC-SHA256), власна БД користувачів та інтеграція з `HeimGuard` |
 | **03.2** | [03.2_Duende_IdentityServer_OIDC.md](03.2_Duende_IdentityServer_OIDC.md) | `DuendeIdentityInMemory` | Виділений STS (OAuth 2.0 / OIDC), Discovery, Authorization Code + PKCE, `at+jwt` та Scopes |
-| **03.3** | [03.3_Keycloak_Pulumi_And_Duende_Federation.md](03.3_Keycloak_Pulumi_And_Duende_Federation.md) | `Keycloak` + `KeycloakPulumiAuth` + `Duende` | Enterprise IAM у контейнері Aspire, IaC на Pulumi, OIDC-федерація у Duende та проброс токенів |
+| **03.3** | [03.3_Keycloak_Pulumi_And_Duende_Federation.md](03.3_Keycloak_Pulumi_And_Duende_Federation.md) | `Keycloak` + `KeycloakPulumiAuth` | Enterprise IAM у контейнері Aspire, IaC на Pulumi, мапінг `realm_access.roles` та проброс токенів |
 
 ---
 
 ## 🏗️ Єдина архітектура під керуванням `CargoDelivery.AppHost`
 
-Усі три провайдери запускаються **одночасно** у [`AppHost.cs`](../Aspire/CargoDelivery.AppHost/AppHost.cs), а мікросервіси (`DriversManagement`, `OrderingManagement`, `BlogManagement`) приймають токени від будь-якого з них через [`SmartAuthPolicyExtensions.cs`](../Aspire/CargoDelivery.ServiceDefaults/Auth/SmartAuthPolicyExtensions.cs):
+Усі три провайдери запускаються **незалежно й одночасно** у [`AppHost.cs`](../Aspire/CargoDelivery.AppHost/AppHost.cs), а кожен бізнес-мікросервіс демонструє свій окремий підхід прямо у своєму `Program.cs`:
 
 ```mermaid
 flowchart TB
     Client["Swagger UI / Postman / Tests"]
 
-    subgraph Auth ["🛡️ Провайдери (одночасно в AppHost)"]
-        M1["03.1 auth-simple-api<br/>(HMAC-SHA256)"]
-        M2["03.2 auth-duende<br/>(OIDC / PKCE / RS256)"]
-        M3["03.3 keycloak<br/>(Realm DevRealmDrivers)"]
-        M3 -.->|"OIDC Federation"| M2
+    subgraph Auth ["🛡️ Незалежні провайдери (одночасно в AppHost)"]
+        M1["03.1 auth-simple-api :5011<br/>(HMAC-SHA256)"]
+        M2["03.2 auth-duende :5012<br/>(OIDC / PKCE / RS256)"]
+        M3["03.3 keycloak :5080<br/>(Realm DevRealmDrivers)"]
     end
 
     subgraph Gate ["🚪 Edge & Aggregation"]
@@ -36,9 +35,9 @@ flowchart TB
     end
 
     subgraph Services ["⚡ Craftsman Microservices"]
-        DM["DriversManagement<br/>(SmartPolicy + HeimGuard)"]
-        CO["OrderingManagement<br/>(SmartPolicy + HeimGuard)"]
-        DB["BlogManagement<br/>(SmartPolicy + gRPC)"]
+        DM["DriversManagement<br/>(03.1 Simple JWT + HeimGuard)"]
+        DB["BlogManagement<br/>(03.2 Duende OIDC + Ролі)"]
+        CO["OrderingManagement<br/>(03.3 Keycloak IAM + Ролі)"]
         AGG --> DM
         AGG --> CO
         AGG --> DB
@@ -50,12 +49,27 @@ flowchart TB
 
 ---
 
+## 🌐 Карта портів платформи
+
+| Група | Сервіс | Порт | Призначення |
+| :--- | :--- | :--- | :--- |
+| **Gateway / BFF** | `CargoDelivery.ApiGateway` | `https://localhost:5000` | Ocelot API Gateway |
+| | `CargoDelivery.HttpAggregator` | `https://localhost:5005` | HTTP Aggregator (Scatter-Gather) |
+| **Мікросервіси** | `DriversManagement` (03.1) | `https://localhost:5001` | Водії (Simple JWT) |
+| | `BlogManagement` (03.2) | `https://localhost:5002` | Блог (Duende OIDC + ролі) |
+| | `OrderingManagement` (03.3) | `https://localhost:5003` | Замовлення (Keycloak IAM) |
+| **Auth-провайдери** | `AuthorizationModuleAPI` (03.1) | `https://localhost:5011` (`http://localhost:5111`) | Custom JWT API |
+| | `DuendeIdentityInMemory` (03.2) | `https://localhost:5012` | Duende IdentityServer |
+| | `Keycloak` (03.3 контейнер) | `http://localhost:5080` | Keycloak (`DevRealmDrivers`) |
+
+---
+
 ## 📊 Порівняльна таблиця трьох підходів
 
 | Критерій | 03.1 Simple JWT | 03.2 Duende IdentityServer | 03.3 Keycloak + Duende |
 | :--- | :--- | :--- | :--- |
-| **Схема в коді** | `SimpleJwtScheme` | `DuendeScheme` | `KeycloakScheme` / `DuendeScheme` |
+| **Мікросервіс** | `DriversManagement` | `BlogManagement` | `OrderingManagement` |
 | **Підпис токена** | Симетричний (`HMAC-SHA256`) | Асиметричний (`RS256` / JWKS) | Асиметричний (`RS256` / JWKS) |
 | **Де лежать паролі** | У БД самого сервісу (`AuthorizationModuleAPI`) | У STS (`DuendeIdentityInMemory`) | У корпоративному IAM (`Keycloak`) |
-| **SSO / Федерація** | Немає | Так (OIDC) | Так (Enterprise SSO + LDAP/2FA + Pulumi IaC) |
-| **Swagger авторизація** | `03.1-SimpleJWT-Bearer` | `03.2-Duende-OAuth2` | `03.3-Keycloak-OAuth2` або через кнопку в Duende |
+| **SSO / Федерація** | Немає | Так (OIDC + ролі) | Так (Enterprise SSO + `realm_access.roles` + Pulumi IaC) |
+| **Swagger авторизація** | Bearer JWT | OAuth2 PKCE (Duende) | OAuth2 PKCE (Keycloak) |

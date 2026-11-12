@@ -164,6 +164,7 @@ app.MapDefaultEndpoints();
 app.UseSerilogRequestLogging();
 app.UseRouting();
 
+// Конвеєр безпеки: перевірка токена Keycloak (03.3), мапінг ролей realm_access та HeimGuard
 app.UseAuthentication();
 app.UseAuthorization();
 

@@ -92,9 +92,6 @@ var keycloak = builder.AddContainer("keycloak", "quay.io/keycloak/keycloak", "26
     .WaitFor(keycloakDb);
 
 var keycloakRealmAuthority = ReferenceExpression.Create($"{keycloak.GetEndpoint("http")}/auth/realms/DevRealmDrivers");
-
-// Опціональна федерація 03.3 (Keycloak -> Duende): підключається поверх автономного 03.2 для демонстрації
-duendeAuth.WithEnvironment("Keycloak__Authority", keycloakRealmAuthority);
 // ====================================================================================
 // 📦 3. МІКРОСЕРВІС ЗАМОВЛЕНЬ ТА ДОСТАВОК: OrderingManagement
 // ------------------------------------------------------------------------------------

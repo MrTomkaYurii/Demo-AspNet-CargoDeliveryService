@@ -129,6 +129,7 @@ var app = builder.Build();
     app.UseSerilogRequestLogging();
     app.UseRouting();
 
+    // Конвеєр безпеки: спочатку перевірка JWT-токена (03.1 Simple JWT), потім політики та HeimGuard
     app.UseAuthentication();
     app.UseAuthorization();
 

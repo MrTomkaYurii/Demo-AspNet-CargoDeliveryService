@@ -4,6 +4,7 @@ namespace DuendeIdentityInMemory
 {
     public static class Config
     {
+        // Ресурси ідентифікації OIDC (потрапляють в ID Token / UserInfo, зокрема ролі користувача)
         public static IEnumerable<IdentityResource> IdentityResources =>
             new IdentityResource[]
             {
@@ -13,19 +14,21 @@ namespace DuendeIdentityInMemory
                 new IdentityResource("roles", "User Roles", new[] { "role" }),
             };
 
+        // Скоупи доступу до API (передаються у параметрі scope під час авторизації)
         public static IEnumerable<ApiScope> ApiScopes =>
             new ApiScope[]
             {
-                // N-Tier DriversApi scopes
+                // Скоупи для N-Tier DriversApi
                 new ApiScope("DriverApi.read"),
                 new ApiScope("DriverApi.write"),
 
-                // Craftsman Microservices scopes
+                // Скоупи для мікросервісів Craftsman (зокрема blog_management для BlogManagement)
                 new ApiScope("drivers_management", "DriversManagement Microservice API"),
                 new ApiScope("cargo_ordering", "OrderingManagement Microservice API"),
                 new ApiScope("blog_management", "BlogManagement Microservice API"),
             };
 
+        // Захищені API-ресурси: UserClaims = { "role" } змушує Duende включати роль користувача в Access Token (at+jwt)
         public static IEnumerable<ApiResource> ApiResources => new[]
         {
             new ApiResource("DriverApi")

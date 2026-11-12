@@ -75,6 +75,11 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "03-Documentation", "03-Docu
 		02-Microservices-Craftsman\02-03-Identity-Security-Documentation\README.md = 02-Microservices-Craftsman\02-03-Identity-Security-Documentation\README.md
 	EndProjectSection
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Keycloak", "Keycloak", "{C0030003-0000-0000-0000-000000000003}"
+	ProjectSection(SolutionItems) = preProject
+		02-Microservices-Craftsman\Keycloak\realm-export.json = 02-Microservices-Craftsman\Keycloak\realm-export.json
+	EndProjectSection
+EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{51D18FAD-0888-4A89-AFA5-605BF77E9297}"
 	ProjectSection(SolutionItems) = preProject
 		docker-compose.override.yml = docker-compose.override.yml
@@ -575,6 +580,7 @@ Global
 		{AE665EE3-A9B9-46E7-A118-8CECD34A2E6A} = {A0020002-0000-0000-0000-000000000002}
 		{F07F44D2-EF11-43E2-9E42-A4BE9D87B450} = {AE665EE3-A9B9-46E7-A118-8CECD34A2E6A}
 		{E0030003-0000-0000-0000-000000000003} = {A0030003-0000-0000-0000-000000000003}
+		{C0030003-0000-0000-0000-000000000003} = {A0030003-0000-0000-0000-000000000003}
 		{6E9054A7-191A-482C-A943-85C81769263D} = {7776DB05-F413-4EEB-912D-3B04E039DD8D}
 		{801F8C89-4C24-4FBC-AB62-2A7AFB7AC67F} = {7776DB05-F413-4EEB-912D-3B04E039DD8D}
 		{065AE2A4-7E59-49C6-9DD0-3623698486FB} = {7776DB05-F413-4EEB-912D-3B04E039DD8D}

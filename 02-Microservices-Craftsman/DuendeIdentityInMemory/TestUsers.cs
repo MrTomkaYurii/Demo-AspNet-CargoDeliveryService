@@ -9,6 +9,9 @@ using Duende.IdentityServer;
 using Duende.IdentityServer.Test;
 
 
+// Тестові користувачі для демонстрації Duende IdentityServer (03.2):
+//   • alice / alice — адміністратор (ролі SuperAdmin та User)
+//   • bob / bob     — звичайний користувач (роль User)
 public class TestUsers
 {
     public static List<TestUser> Users
