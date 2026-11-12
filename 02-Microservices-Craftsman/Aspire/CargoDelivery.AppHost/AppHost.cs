@@ -60,6 +60,16 @@ var authJwtDb = sqlserver.AddDatabase("auth-jwt-db", "DriversManagementJWT");
 //                               (автоімпорт реалму DevRealmDrivers + федерація в Duende)
 // ====================================================================================
 
+// --- 03.1 Простий Custom JWT API (AuthorizationModuleAPI) ---
+var simpleAuthApi = builder.AddProject<Projects.AuthorizationModuleAPI>("auth-simple-api")
+    .WithReference(authJwtDb, connectionName: "WebApiJWTDatabase")
+    .WithHttpHealthCheck("/health")
+    .WaitFor(authJwtDb);
+
+// --- 03.2 Duende IdentityServer (автономний OIDC провайдер) ---
+var duendeAuth = builder.AddProject<Projects.DuendeIdentityInMemory>("auth-duende")
+    .WithHttpHealthCheck("/health");
+
 // --- 03.3 Інфраструктура Keycloak (PostgreSQL + Контейнер Keycloak) ---
 var keycloakPg = builder.AddPostgres("keycloak-pg")
     .WithDataVolume("keycloak-pg-data");
@@ -83,17 +93,8 @@ var keycloak = builder.AddContainer("keycloak", "quay.io/keycloak/keycloak", "26
 
 var keycloakRealmAuthority = ReferenceExpression.Create($"{keycloak.GetEndpoint("http")}/auth/realms/DevRealmDrivers");
 
-// --- 03.1 Простий Custom JWT API (AuthorizationModuleAPI) ---
-var simpleAuthApi = builder.AddProject<Projects.AuthorizationModuleAPI>("auth-simple-api")
-    .WithReference(authJwtDb, connectionName: "WebApiJWTDatabase")
-    .WithHttpHealthCheck("/health")
-    .WaitFor(authJwtDb);
-
-// --- 03.2 Duende IdentityServer (автономний, опціональна федерація 03.3 через Keycloak__Authority) ---
-var duendeAuth = builder.AddProject<Projects.DuendeIdentityInMemory>("auth-duende")
-    .WithEnvironment("Keycloak__Authority", keycloakRealmAuthority)
-    .WithHttpHealthCheck("/health");
-
+// Опціональна федерація 03.3 (Keycloak -> Duende): підключається поверх автономного 03.2 для демонстрації
+duendeAuth.WithEnvironment("Keycloak__Authority", keycloakRealmAuthority);
 // ====================================================================================
 // 📦 3. МІКРОСЕРВІС ЗАМОВЛЕНЬ ТА ДОСТАВОК: OrderingManagement
 // ------------------------------------------------------------------------------------
