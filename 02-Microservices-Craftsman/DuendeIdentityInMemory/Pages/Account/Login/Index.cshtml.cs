@@ -1,3 +1,14 @@
+// ====================================================================================
+// 🔐 СТОРІНКА ВХОДУ (/Account/Login) — ІНТЕРАКТИВНИЙ КРОК AUTHORIZATION CODE FLOW
+// ------------------------------------------------------------------------------------
+// Сюди Duende автоматично перенаправляє браузер після запиту GET /connect/authorize,
+// якщо користувач ще не має сесійної cookie STS.
+//   • OnGet(returnUrl) — показує форму логіну (returnUrl веде назад у /connect/authorize/callback).
+//   • OnPost()         — перевіряє логін/пароль через TestUserStore (alice/alice, bob/bob),
+//                        виставляє cookie (HttpContext.SignInAsync) і повертає браузер у
+//                        Duende, який генерує одноразовий authorization_code і редиректить у Swagger.
+// ====================================================================================
+
 using Duende.IdentityServer;
 using Duende.IdentityServer.Events;
 using Duende.IdentityServer.Models;

@@ -66,10 +66,10 @@ flowchart TB
 
 ## 📊 Порівняльна таблиця трьох підходів
 
-| Критерій | 03.1 Simple JWT | 03.2 Duende IdentityServer | 03.3 Keycloak + Duende |
+| Критерій | 03.1 Simple JWT | 03.2 Duende IdentityServer | 03.3 Keycloak + Pulumi IaC |
 | :--- | :--- | :--- | :--- |
 | **Мікросервіс** | `DriversManagement` | `BlogManagement` | `OrderingManagement` |
 | **Підпис токена** | Симетричний (`HMAC-SHA256`) | Асиметричний (`RS256` / JWKS) | Асиметричний (`RS256` / JWKS) |
-| **Де лежать паролі** | У БД самого сервісу (`AuthorizationModuleAPI`) | У STS (`DuendeIdentityInMemory`) | У корпоративному IAM (`Keycloak`) |
-| **SSO / Федерація** | Немає | Так (OIDC + ролі) | Так (Enterprise SSO + `realm_access.roles` + Pulumi IaC) |
-| **Swagger авторизація** | Bearer JWT | OAuth2 PKCE (Duende) | OAuth2 PKCE (Keycloak) |
+| **Де лежать паролі** | У БД самого сервісу (`AuthorizationModuleAPI`) | У STS (`DuendeIdentityInMemory`) | У корпоративному IAM (`Keycloak` + PostgreSQL) |
+| **Ключові фічі** | Refresh Token Rotation + `HeimGuard` | OIDC / PKCE, `at+jwt`, M2M, ролі | Enterprise IAM, `realm_access.roles`, Pulumi IaC, Token Propagation |
+| **Swagger авторизація** | Bearer JWT (`Bearer`) | OAuth2 PKCE (`craftsman.swagger`) | OAuth2 PKCE (`drivers_management.swagger`) |

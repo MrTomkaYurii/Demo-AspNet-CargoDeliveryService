@@ -3,33 +3,66 @@
 
 <div class="welcome-page">
     <h1>
-        <img src="~/duende-logo.svg" class="logo">
-        Welcome to Duende IdentityServer
+        <img src="~/duende-logo.svg" class="logo" alt="Duende IdentityServer">
+        CargoDelivery STS — Duende IdentityServer (03.2)
         <small class="text-muted">(version @Model.Version)</small>
     </h1>
 
-    <ul>
-        <li>
-            IdentityServer publishes a
-            <a href="~/.well-known/openid-configuration">discovery document</a>
-            where you can find metadata and links to all the endpoints, key material, etc.
-        </li>
-        <li>
-            Click <a href="~/diagnostics">here</a> to see the claims for your current session.
-        </li>
-        <li>
-            Click <a href="~/grants">here</a> to manage your stored grants.
-        </li>
-        <li>
-            Click <a href="~/serversidesessions">here</a> to view the server side sessions.
-        </li>
-        <li>
-            Click <a href="~/ciba/all">here</a> to view your pending CIBA login requests.
-        </li>
-        <li>
-            Here are links to the
-            <a href="https://github.com/duendesoftware/IdentityServer">source code repository</a>,
-            and <a href="https://github.com/duendesoftware/samples">ready to use samples</a>.
-        </li>
-    </ul>
+    <p class="lead text-muted">
+        Виділений Security Token Service (OAuth 2.0 / OIDC + PKCE, RS256) для мікросервісу <strong>BlogManagement (:5002)</strong>.
+    </p>
+
+    <div class="row mt-4">
+        <div class="col-md-7">
+            <div class="card mb-3">
+                <div class="card-header"><strong>Основні OIDC-ендпоінти та інструменти</strong></div>
+                <ul class="list-group list-group-flush">
+                    <li class="list-group-item">
+                        <a href="~/.well-known/openid-configuration">OIDC Discovery Document</a> — метадані, URL ендпоінтів і <code>jwks_uri</code>.
+                    </li>
+                    <li class="list-group-item">
+                        <a href="~/.well-known/openid-configuration/jwks">Публічні ключі (JWKS)</a> — RSA-ключі для перевірки підпису <code>RS256</code>.
+                    </li>
+                    <li class="list-group-item">
+                        <a href="~/diagnostics">Diagnostics</a> — клейми та властивості поточної cookie-сесії користувача.
+                    </li>
+                    <li class="list-group-item">
+                        <a href="~/grants">Grants</a> — перегляд і відкликання виданих дозволів та токенів.
+                    </li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="col-md-5">
+            <div class="card mb-3">
+                <div class="card-header"><strong>Тестові облікові записи (In-Memory)</strong></div>
+                <div class="card-body">
+                    <table class="table table-sm mb-2">
+                        <thead>
+                            <tr>
+                                <th>Логін</th>
+                                <th>Пароль</th>
+                                <th>Ролі</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><code>alice</code></td>
+                                <td><code>alice</code></td>
+                                <td><span class="badge badge-primary">SuperAdmin</span> <span class="badge badge-secondary">User</span></td>
+                            </tr>
+                            <tr>
+                                <td><code>bob</code></td>
+                                <td><code>bob</code></td>
+                                <td><span class="badge badge-secondary">User</span></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    <small class="text-muted">
+                        PKCE-клієнт для Swagger: <code>craftsman.swagger</code> (без <code>client_secret</code>).
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>

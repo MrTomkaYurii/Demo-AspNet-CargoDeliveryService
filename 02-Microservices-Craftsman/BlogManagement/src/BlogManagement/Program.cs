@@ -42,31 +42,51 @@ var builder = WebApplication.CreateBuilder(args);
     // 🏛️ 03.2 АВТЕНТИФІКАЦІЯ ТА АВТОРИЗАЦІЯ: DUENDE IDENTITYSERVER (OIDC / OAuth 2.0 + PKCE)
     // ------------------------------------------------------------------------------------
     // Усі налаштування безпеки винесені прямо у Program.cs для повної прозорості.
-    // BlogManagement демонструє підхід 03.2:
-    //   • Виділений STS (DuendeIdentityInMemory), що видає токени формату "at+jwt" (RS256).
-    //   • Публічні ключі (JWKS) завантажуються автоматично через OIDC Discovery.
-    //   • Підтримка ролей (клейм "role" → RoleClaimType) для політик авторизації та HeimGuard.
+    // BlogManagement демонструє підхід 03.2 (виділений Security Token Service):
+    //   • Мікросервіс НЕ зберігає паролів і НЕ знає спільного секрету (на відміну від 03.1).
+    //   • Приватний ключ підпису RS256 лежить лише в DuendeIdentityInMemory (:5012).
+    //   • Публічні ключі (JWKS) підтягуються автоматично через OIDC Discovery при першому запиті.
+    //   • Підтримуються як рольові політики ASP.NET Core (SuperAdmin / User), так і HeimGuard.
     // ====================================================================================
+
+    // 1. Адреса STS (DuendeIdentityInMemory):
+    //    • Під Aspire інжектується автоматично через змінну Auth__Duende__Authority в AppHost.cs.
+    //    • При автономному запуску використовується локальний fallback https://localhost:5012.
     var duendeAuthority = (builder.Configuration["Auth:Duende:Authority"]
                            ?? "https://localhost:5012").TrimEnd('/');
 
+    // У середовищі FunctionalTesting реальний JwtBearer не реєструється, бо тести підставляють фейкову автентифікацію.
     if (!builder.Environment.IsEnvironment(Consts.Testing.FunctionalTestingEnvName))
     {
+        // 2. Реєстрація схеми автентифікації JwtBearer (перевірка заголовка Authorization: Bearer <access_token>)
         builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             .AddJwtBearer(options =>
             {
+                // КЛЮЧОВИЙ РЯДОК OIDC: змушує JwtBearerHandler при першому запиті з токеном
+                // сходити на {Authority}/.well-known/openid-configuration, забрати jwks_uri,
+                // завантажити публічні RSA-ключі (JWKS) і закешувати їх для локальної перевірки RS256.
                 options.Authority = duendeAuthority;
+
+                // У Production вимагаємо виключно HTTPS для Discovery/JWKS; у Development дозволяємо локальний стенд.
                 options.RequireHttpsMetadata = !builder.Environment.IsDevelopment();
 
-                // Duende випускає токени з типом "at+jwt" (RFC 9068).
-                // За замовчуванням MapInboundClaims = true автоматично мапить клейм "role" у ClaimTypes.Role.
+                // Спрощення для навчального стенду: не блокуємо токен за полем "aud" (Audience),
+                // але підпис (RS256), видавця (iss) та термін дії (exp) все одно перевіряємо суворо.
                 options.TokenValidationParameters.ValidateAudience = false;
+
+                // Duende IdentityServer за стандартом RFC 9068 випускає Access Token із заголовком "typ": "at+jwt".
+                // Явно дозволяємо "at+jwt" і класичний "JWT", щоб валідатор не відхиляв токени Duende з 401.
                 options.TokenValidationParameters.ValidTypes = new[] { "at+jwt", "JWT" };
+
+                // Вказуємо, з якого клейму брати User.Identity.Name.
+                // (За замовчуванням MapInboundClaims = true автоматично мапить клейм "role" у ClaimTypes.Role,
+                // тому User.IsInRole("SuperAdmin") та policy.RequireRole("SuperAdmin") працюють одразу.)
                 options.TokenValidationParameters.NameClaimType = "name";
 
                 if (builder.Environment.IsDevelopment())
                 {
-                    // У локальному Aspire-стенді дозволяємо dev-сертифікат для backchannel-запиту JWKS
+                    // Backchannel — це прямий сервер-сервер запит BlogManagement -> Duende за документом Discovery/JWKS.
+                    // У локальному Aspire-стенді дозволяємо self-signed dev-сертифікат HTTPS, щоб цей запит не падав.
                     options.BackchannelHttpHandler = new HttpClientHandler
                     {
                         ServerCertificateCustomValidationCallback = HttpClientHandler.DangerousAcceptAnyServerCertificateValidator
@@ -75,17 +95,25 @@ var builder = WebApplication.CreateBuilder(args);
             });
     }
 
-    // Налаштування рольової авторизації (для клеймів із Duende: SuperAdmin / User) та HeimGuard
+    // 3. Реєстрація політик авторизації на основі клейму "role" (який Duende кладе в Access Token
+    //    завдяки ApiResource.UserClaims = { "role" } у DuendeIdentityInMemory/Config.cs):
+    //      • alice / alice -> SuperAdmin, User (проходить обидві політики)
+    //      • bob   / bob   -> User             (проходить RequireUserRole, на RequireAdminRole отримає 403 Forbidden)
+    //    Застосовуються на контролерах через [Authorize(Policy = "RequireAdminRole")] тощо.
     builder.Services.AddAuthorization(options =>
     {
         options.AddPolicy("RequireAdminRole", policy => policy.RequireRole("SuperAdmin"));
         options.AddPolicy("RequireUserRole", policy => policy.RequireRole("User", "SuperAdmin"));
     });
+
+    // 4. HeimGuard — гранульована перевірка прав (permissions) на рівні MediatR-хендлерів через UserPolicyHandler.
     builder.Services.AddHeimGuard<UserPolicyHandler>()
         .MapAuthorizationPolicies()
         .AutomaticallyCheckPermissions();
 
-    // Налаштування Swagger UI для входу через Duende IdentityServer (Authorization Code + PKCE)
+    // 5. Налаштування Swagger UI як OAuth 2.0 клієнта для Duende (Authorization Code + PKCE):
+    //    Тут описуємо OpenAPI-схему безпеки (ендпоінти Duende та скоупи), а сам client_id ("craftsman.swagger")
+    //    і прапорець PKCE (OAuthUsePkce()) підключаються у SwaggerAppExtension.cs.
     builder.Services.ConfigureSwaggerGen(config =>
     {
         config.AddSecurityDefinition("oauth2", new OpenApiSecurityScheme
@@ -94,21 +122,25 @@ var builder = WebApplication.CreateBuilder(args);
             Description = "【03.2 Duende OIDC】 Authorization Code + PKCE (alice/alice — SuperAdmin, bob/bob — User).",
             Flows = new OpenApiOAuthFlows
             {
+                // AuthorizationCode Flow: Swagger UI редиректить браузер на /connect/authorize (Крок 2),
+                // отримує одноразовий code (Крок 3) і обмінює його + code_verifier на /connect/token (Крок 4).
                 AuthorizationCode = new OpenApiOAuthFlow
                 {
                     AuthorizationUrl = new Uri($"{duendeAuthority}/connect/authorize"),
                     TokenUrl = new Uri($"{duendeAuthority}/connect/token"),
                     Scopes = new Dictionary<string, string>
                     {
-                        { "openid", "OpenID Connect" },
-                        { "profile", "Профіль користувача" },
-                        { "roles", "Ролі користувача (role)" },
-                        { "blog_management", "Доступ до BlogManagement API" }
+                        { "openid", "OpenID Connect (обов'язковий: видає ID Token і клейм sub)" },
+                        { "profile", "Профіль користувача (name, given_name, family_name)" },
+                        { "roles", "Ролі користувача (клейм role: SuperAdmin / User)" },
+                        { "blog_management", "Доступ до BlogManagement API (включає role в Access Token)" }
                     }
                 }
             }
         });
 
+        // Прив'язує схему "oauth2" глобально до всіх ендпоінтів у Swagger UI,
+        // щоб після входу Swagger автоматично додавав заголовок Authorization: Bearer <access_token>.
         config.AddSecurityRequirement(new OpenApiSecurityRequirement
         {
             {
@@ -150,7 +182,9 @@ app.MapDefaultEndpoints();
     app.UseSerilogRequestLogging();
     app.UseRouting();
 
-    // Конвеєр безпеки: перевірка OIDC-токена Duende (03.2) та рольових політик / HeimGuard
+    // 6. Конвеєр безпеки (порядок обов'язковий!):
+    //    • UseAuthentication() — читає Bearer-токен, перевіряє RS256-підпис через JWKS Duende і заповнює HttpContext.User.
+    //    • UseAuthorization()  — перевіряє атрибути [Authorize], рольові політики (RequireAdminRole) та HeimGuard.
     app.UseAuthentication();
     app.UseAuthorization();
 

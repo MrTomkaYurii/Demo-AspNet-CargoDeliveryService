@@ -16,7 +16,9 @@ public static class SwaggerAppExtension
             {
                 config.SwaggerEndpoint("/swagger/v1/swagger.json", "BlogManagement v1");
                 config.DocExpansion(DocExpansion.None);
-                // Налаштування PKCE для Swagger-клієнта Duende IdentityServer (03.2)
+                // Налаштування OAuth 2.0 + PKCE для Swagger UI (клієнт із DuendeIdentityInMemory/Config.cs):
+                //   • OAuthClientId("craftsman.swagger") — підставляє client_id у форму Authorize (client_secret порожній).
+                //   • OAuthUsePkce()                     — вмикає генерацію code_verifier / code_challenge (S256) у браузері.
                 config.OAuthClientId("craftsman.swagger");
                 config.OAuthAppName("BlogManagement - Duende PKCE");
                 config.OAuthUsePkce();
